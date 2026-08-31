@@ -805,3 +805,21 @@ La parte clave de este dia no es que el algoritmo sea perfecto; es que ya se ha 
 Este paso es clave para avanzar de la demo funcional a una fase de aprendizaje y validacion academica, donde cada nueva imagen sumara evidencia para ajustar el sistema, detectar la anomalia con mayor precision y preparar la siguiente evolucion hacia una version mas interpretable y mas cercana a la practica dermatologica.
 
 ---
+
+### 8.1 Actualización estética (31-08-2026)
+
+Hoy hemos aplicado una revisión visual completa de la interfaz destinada a la demo. Los cambios se han diseñado para dotar a la aplicación de una apariencia más profesional, minimalista y acorde con una presentación académica y de producto. Estos son los puntos principales implementados:
+
+- Nueva cabecera tipográfica: `Playfair Display` para la marca y `Inter` para la interfaz, mejorando contraste y legibilidad.
+- Paleta renovada: fondo claro neutro con acento vivo (morado) para llamadas a la acción y verde de apoyo para mensajes positivos.
+- Diseño de botones y tarjetas: esquinas suaves, sombra sutil y gradientes discretos para transmitir calidad sin ser recargado.
+- Órb/elemento gráfico principal rediseñado con un degradado profesional y sombra, en lugar del estilo más infantil anterior.
+- Resultado del análisis: se muestra inmediatamente bajo la selección de imagen en un `result-panel` claro y legible; el `user_report` se visualiza en tamaño y peso adecuados para lectura rápida.
+- Ajustes de espaciado, fuente y jerarquía visual para una experiencia más sobria y premium.
+
+Tras la actualización, se ejecutaron las pruebas de regresión: `tests/unit/test_inference_service.py` y `tests/integration/test_health_endpoint.py` (pasaron correctamente). La versión del proyecto se ha etiquetado y publicado como `v.0.1.2` en el repositorio remoto.
+
+Notas:
+
+- Esta actualización es cosmética y no altera la lógica de inferencia, salvo pequeñas mejoras en la presentación del `user_report`.
+- Próximo paso recomendado: crear un `docs/STYLE_GUIDE.md` que recoja paleta, tipografías y componentes reutilizables para futuras iteraciones.
