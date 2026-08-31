@@ -398,6 +398,82 @@ En macOS o Linux se puede utilizar:
 Este script:
 
 1. crea `venv` si no existe;
+
+## Dia 2 - Aprendizaje y ajuste (Resumen)
+
+**Fecha:** Día 2 (estado actual)
+
+**Objetivo de la jornada:** avanzar en la fase de aprendizaje y ajuste del baseline antes de pasar a un entrenamiento supervisado.
+
+- **Trabajo realizado:**
+   - Integración de la base de datos real y verificación de accesos y formatos.
+   - Lanzamiento de la fase de calibración del algoritmo heurístico (ajuste de pesos y umbrales).
+   - Recolección de métricas iniciales y ejemplos representativos para análisis posterior.
+   - Ejecución de pruebas automáticas y comprobación del flujo end-to-end en la demo web.
+
+- **Evidencia y resultados obtenidos:**
+   - **Recall:** mejorado respecto a la versión inicial.
+   - **F1-score:** todavía mejorable; se observan desequilibrios entre precisión y recall.
+   - **Precisión:** demasiado baja para un uso clínico directo; requiere reducción de falsos positivos y/o mejores features.
+
+- **Observaciones importantes:**
+   - La base real está integrada correctamente y permite iterar con datos auténticos.
+   - La calibración está en marcha; los parámetros actuales son heurísticos y se están ajustando empíricamente.
+   - Seguimos en una fase de aprendizaje/ajuste: aún no se ha iniciado un entrenamiento supervisado completo.
+
+- **Siguientes pasos sugeridos (se pueden elegir en el siguiente chat):**
+   1. Reducción de falsos positivos para afinar la heurística (mejoras rápidas en precisión).
+   2. Preparación para la siguiente etapa supervisada: extraer/crear features más potentes y diseñar pipeline de entrenamiento.
+
+> Nota: en el siguiente chat continuaremos desde este punto exacto sin repetir lo ya realizado. Elijas la opción que elijas, arrancamos desde aquí.
+
+## Dia 2 - Resultados de la optimizacion de reglas y filtros
+
+**Acciones realizadas:**
+- Extracción de features adicionales (laplaciano, HSV stats, histogramas de rojo).
+- Implementación de filtros en cascada: primer intento con clasificador (scikit-learn) y fallback a reglas heurísticas.
+- Extracción de `models/features.csv` con 10015 ejemplos.
+- Búsqueda y ajuste de reglas heurísticas (`scripts/tune_rules.py`) para maximizar F1 con restricción de recall >= 0.65.
+- Promoción de las reglas afinadas a `models/filter_rules.json`.
+
+**Métricas clave:**
+- Baseline previo a cambios: Precision 0.3274 — Recall 0.7619 — F1 0.4580 — Accuracy 0.4041
+- Tras aplicar reglas afinadas: Precision 0.3457 — Recall 0.7169 — F1 0.4664 — Accuracy 0.4579
+
+**Observaciones:**
+- La precisión aumentó (menos falsos positivos relativos), F1 mejoró modestamente. Recall disminuyó respecto al baseline más agresivo, pero se mantiene > 0.70 tras tuning.
+- Intento de instalar `scikit-learn` falló por compilación Cython en el entorno actual; se ofrecieron alternativas:
+   - instalar scikit-learn precompilado (conda/wheel) para entrenar clasificadores ML, o
+   - implementar un clasificador ligero en NumPy como solución intermedia.
+
+**Próximos pasos recomendados:**
+1. Verificar con el clínico cuál es el umbral mínimo de recall aceptable antes de sacrificar detección (p. ej. ≥0.70).  
+2. Intentar instalación de scikit-learn mediante conda o wheels y entrenar un filtro ML (mejor rendimiento esperado).  
+3. Si instalar scikit-learn no es posible, implementar un clasificador en NumPy (log-reg por descenso de gradiente) y entrenarlo sobre `models/features.csv`.
+
+## Dia 2 - Verificacion final de la aplicacion y cierre de la fase de calibracion
+
+**Fecha:** 31 de agosto de 2026  
+**Estado:** validado y en funcionamiento local.
+
+Durante esta comprobacion final se confirma que la aplicacion funciona de forma end-to-end en el navegador y que el backend sigue respondiendo correctamente. Se ejecutaron pruebas dirigidas y se validó la API con respuesta saludable.
+
+**Evidencia verificada:**
+- `PYTHONPATH=. ./venv/bin/python -m pytest -q tests/unit/test_inference_service.py tests/integration/test_health_endpoint.py`
+- Resultado: `5 passed in 1.01s`
+- `curl -fsS http://127.0.0.1:8000/health`
+- Resultado: `{"status":"ok"}`
+- Navegador abierto en `http://127.0.0.1:8000/`
+- Resultado: la interfaz carga correctamente con el formulario de analisis y sin errores visibles.
+
+**Conclusiones:**
+- El flujo web está operativo.
+- La fase actual del proyecto sigue siendo de calibracion y aprendizaje con datos reales antes del entrenamiento supervisado.
+- La estrategia correcta es mantener la logica basada en caracteristicas medicas (asimetria, borde, color, tamaño) mientras se ajustan falsos positivos.
+- El siguiente paso recomendado es cerrar una ultima iteracion de thresholds y mascara lesion/fondo, y tras estabilizarlo, avanzar a un modelo supervisado con features extraidas y validacion train/test.
+
+**Nota de trabajo:** esta fase se mantiene en modo de ajuste metodologico, no como producto clinico final ni como diagnostico definitivo.
+
 2. activa el entorno virtual;
 3. instala las dependencias;
 4. inicia Uvicorn en `127.0.0.1:8000`.
@@ -490,3 +566,242 @@ Antes de utilizar un modelo con finalidad academica avanzada sera necesario eval
 Durante esta fase se ha construido una primera version ejecutable de AnalisisImagenes. La aplicacion ya permite recorrer el flujo completo desde la carga de una imagen hasta la generacion de un resultado estructurado.
 
 El valor principal de esta etapa es haber creado una base modular y comprobable. La aplicacion funciona como un prototipo de apoyo a la decision y queda preparada para incorporar posteriormente un modelo de inteligencia artificial entrenado con imagenes reales.
+
+---
+
+## Dia 2 - Preparacion de la base de datos para entrenar y mejorar la deteccion
+
+**Fecha:** 31 de agosto de 2026  
+**Proyecto:** AnalisisImagenes  
+**Objetivo de esta fase:** preparar la forma en la que se va a introducir la base de datos del TFG para que la aplicacion pueda aprender de ejemplos reales y mejorar la deteccion de la anomalia.
+
+### 1. Que vamos a implementar
+
+En esta segunda fase no vamos a sustituir el algoritmo por un modelo entrenado de golpe. Lo que vamos a preparar es el canal de datos que permita educar la aplicacion de forma ordenada y reproducible.
+
+La idea es la siguiente:
+
+1. guardar todas las imagenes en una carpeta local estructurada;
+2. guardar en una tabla o CSV los metadatos de cada imagen;
+3. etiquetar cada caso con la clase real o orientativa del diagnostico;
+4. extraer las mismas caracteristicas que usa el algoritmo actual (`red_mean`, `contrast`, `hotspot_ratio`, `edge_density`);
+5. almacenar ese conjunto de caracteristicas junto a la etiqueta;
+6. usar esos datos para ajustar umbrales o entrenar un modelo supervisado posterior.
+
+Esto permite que la aplicacion pase de ser un prototipo heuristico a un sistema con memoria de ejemplos reales.
+
+### 2. Estructura de la base de datos que vamos a usar
+
+Para empezar, la forma mas practica para un proyecto academico es una base local con SQLite, porque no exige servidor externo y permite trabajar rapido desde Python.
+
+La estructura sugerida es:
+
+```text
+project/
+├── data/
+│   ├── raw_images/
+│   │   ├── lesion_001.png
+│   │   ├── lesion_002.png
+│   │   └── ...
+│   ├── labels.csv
+│   └── extracted_features.csv
+├── app/
+│   ├── services/
+│   ├── models/
+│   └── db/
+│       └── dataset.sqlite3
+└── scripts/
+    └── ingest_dataset.py
+```
+
+La tabla principal puede tener este formato:
+
+```sql
+CREATE TABLE IF NOT EXISTS images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    label TEXT NOT NULL,
+    severity TEXT,
+    benign_malignant TEXT,
+    source TEXT,
+    notes TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Y una segunda tabla para los datos de aprendizaje:
+
+```sql
+CREATE TABLE IF NOT EXISTS features (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    image_id INTEGER,
+    red_mean REAL,
+    contrast REAL,
+    hotspot_ratio REAL,
+    edge_density REAL,
+    risk_score REAL,
+    predicted_label TEXT,
+    true_label TEXT,
+    FOREIGN KEY (image_id) REFERENCES images(id)
+);
+```
+
+La ventaja de este esquema es que guardamos tanto la imagen como la etiqueta y la descripcion tecnica de cada caso. Con esto se puede comparar lo que el algoritmo ve con lo que el caso real deberia ser.
+
+### 3. Como se mete la base de datos
+
+La forma concreta de introducirla es la siguiente:
+
+1. **Preparar la carpeta de datos**  
+   Guardar las imagenes en una carpeta local como `data/raw_images/`.
+
+2. **Crear el CSV de etiquetas**  
+   Por cada imagen se guarda una fila con columnas tipo:
+
+```csv
+filename,label,severity,benign_malignant,source,notes
+lesion_001.png,enfermo,medio,maligno_probable,clinica_01,"lesion sospechosa con borde irregular"
+lesion_002.png,sano,ninguno,benigno_probable,clinica_02,"lesion estable sin signos de alarma"
+```
+
+3. **Crear la base SQLite**  
+   El codigo Python crea la base e importa el CSV con informaciones del archivo y la etiqueta.
+
+4. **Procesar cada imagen**  
+   Se ejecuta el mismo calculo del algoritmo actual para sacar las caracteristicas visuales.
+
+5. **Guardar resultados**  
+   Se guarda la imagen, la etiqueta real, la puntuacion calculada y las features extraidas.
+
+6. **Revisar discrepancias**  
+   Es importante detectar los casos donde el algoritmo falla. Por ejemplo, una imagen etiquetada como `enfermo` pero con riesgo bajo, o una imagen etiquetada como `sano` y con riesgo alto.
+
+Ese analisis de errores es lo que nos permite aprender y ajustar parametros de forma real.
+
+### 4. Que estamos usando realmente
+
+En esta fase estamos integrando una solucion ligera y practica, no una infraestructura pesada. Los elementos que se van a usar son:
+
+- Python para la ingesta y el procesamiento;
+- SQLite para guardar la base de datos local;
+- Pandas para leer CSV y manipular tablas;
+- OpenCV y NumPy para procesar cada imagen;
+- la misma logica de `inference_service.py` para extraer caracteristicas;
+- una carpeta `data/` para guardar cada imagen y su metadata.
+
+Este enfoque mantiene la aplicacion simple, reproducible y compatible con un trabajo academico. Mas adelante, si se quiere escalar, se puede migrar a Postgres o a un dataset con mayor volumen, pero para la fase de aprendizaje inicial SQLite es la mejor opcion.
+
+### 5. Como responde el algoritmo con esta base de datos
+
+La respuesta del algoritmo no cambia en concepto: sigue calculando una puntuacion numerica de riesgo sobre la base de cada imagen.
+
+El flujo de cada ejemplo nuevo es este:
+
+1. se carga la imagen desde la base de datos;
+2. se normaliza y redimensiona con OpenCV;
+3. se calculan:
+   - `red_mean`
+   - `contrast`
+   - `hotspot_ratio`
+   - `edge_density`
+4. se hace la suma ponderada:
+
+```text
+risk_score =
+    0.34 * red_mean
+  + 0.28 * contrast
+  + 0.26 * hotspot_ratio
+  + 0.12 * edge_density
+```
+
+5. el resultado se compara con los umbrales:
+   - `< 0.50` => `sano`
+   - `0.50 a 0.64` => `enfermo`, gravedad `bajo`
+   - `0.65 a 0.79` => `enfermo`, gravedad `medio`
+   - `>= 0.80` => `enfermo`, gravedad `peligro`
+
+6. se genera la recomendacion y el informe textual.
+
+El punto clave es que, cuando la base de datos se va ampliando, el algoritmo ya no responde solo a una regla estatica. Puede compararse lo que el modelo predice para cada imagen con la etiqueta real proporcionada por el dataset. Eso permite:
+
+- detectar falsos positivos;
+- detectar falsos negativos;
+- ajustar los umbrales;
+- identificar si la anomalia se concentra en un rango concreto de color, contraste o densidad de borde;
+- refinar la regla de decision con datos reales.
+
+En otras palabras, la base de datos no cambia la formula del algoritmo, pero si cambia la forma en que se valida y mejora la decision.
+
+### 5.1. Fase de educacion y calibracion antes de entrenar
+
+Es importante dejar claro que, en este punto del proyecto, no estamos entrenando un modelo de inteligencia artificial ni sustituyendo el algoritmo por una red neuronal. Estamos en una fase previa y necesaria de aprendizaje supervisado basico: usar ejemplos reales para entender como se comporta el sistema y donde falla.
+
+La idea no es "apretar un boton y entrenar". La idea es construir una base de evidencia y de trazabilidad: cada imagen tiene un metadata real, una etiqueta real y una prediccion del algoritmo. Con eso se puede detectar si el sistema sobreestima, subestima o falla en funciones concretas de la lesion.
+
+Esto es lo que se entiende por educar la aplicacion: no la estamos haciendo inteligente de una forma milagrosa, sino que le estamos dando datos para que compare su respuesta con la realidad y ajuste su criterio.
+
+En esta fase se entiende que:
+
+- la base de datos es la fuente de conocimiento;
+- la etiqueta real (`dx`) es la verdad de referencia disponible en el CSV;
+- la prediccion de riesgo es la respuesta del algoritmo actual;
+- la discrepancia entre ambas permite detectar errores y calibrar umbrales;
+- la mejora del sistema se valida con datos reales antes de pasar a una arquitectura mas avanzada.
+
+Por tanto, la fase actual es una fase de observacion, medida y ajuste, no una fase de entrenamiento final.
+
+### 5.2. Relacion con la metodologia ABCDE y la deteccion clinica
+
+Durante esta fase tambiien se incorpora la referencia clinica de la metodologia ABCDE para detectar patrones sospechosos en lesiones cutaneas.
+
+La metodologia ABCDE se resume en:
+
+- **A (Asimetria):** una lesion con asimetria marcada suele ser mas sospechosa;
+- **B (Borde):** bordes irregulares o poco definidos aumentan la alarma;
+- **C (Color):** presencia de varios tonos o color heterogeneo es un signo de alerta;
+- **D (Diametro):** lesiones mayores suelen requerir mayor vigilancia;
+- **E (Evolucion):** cambios en forma, tamano o color con el tiempo son sospechosos.
+
+Esto es fundamental porque el algoritmo actual, basado principalmente en color, contraste y densidad de bordes, no captura de manera real la estructura diagnostica que un dermatologo observa. La base de datos y los metadatos reales permiten evaluar precisamente si la respuesta del algoritmo se alinea con patrones clinicamente relevantes o si solo responde a una firma visual demasiado reducida.
+
+En otras palabras, la referencia ABCDE sirve para orientar la mejora del sistema en una direccion mas fiel a la practica clinica, pero sin adelantar una conclusion diagnostica definitiva. Es una guia de caracterizacion visual, no un sustituto del criterio medico.
+
+### 6. Que vamos a ir implementando y probando
+
+Durante esta segunda fase se van a incluir estas piezas:
+
+- carpeta `data/` para imagenes y etiquetas;
+- script de ingestion para importar la base local;
+- tabla SQLite con imagenes y features;
+- servicio para procesar cada ejemplo y registrar su metrica;
+- comparativa entre `prediccion` y `etiqueta real`;
+- analisis de error para ver si el algoritmo sobreestima o subestima la anomalia;
+- ajuste de umbrales o paso posterior a un modelo entrenado.
+
+Este proceso es fundamental porque la aplicacion no se va a entrenar a ciegas: primero se va a construir la trazabilidad de cada ejemplo, y luego se puede mejorar de forma medible.
+
+### 7. Objetivo de la fase de aprendizaje
+
+El objetivo no es que la aplicacion sea automatica y perfecta desde el primer dia. El objetivo es dejarla preparada para:
+
+- aprender con ejemplos reales;
+- medir la calidad de la prediccion;
+- detectar patrones visuales sistematicos;
+- reducir errores en casos de alta sospecha;
+- preparar la siguiente evolucion hacia un modelo de machine learning supervisado o un clasificador mas robusto.
+
+En esta etapa la base de datos se convierte en la herramienta de educacion del sistema. Cuantas mas imagenes con etiquetas bien definidas se registren, mejor se podra calibrar la respuesta y mas fiable sera el apoyo diagnostico.
+
+Es importante precisar que esta fase no es un entrenamiento final del modelo ni una validacion clinica definitiva. Es una etapa de educacion, analisis de errores y ajuste de logica antes de avanzar hacia una version mas robusta. El objetivo es entender mejor lo que el sistema ve, compararlo con la realidad del dataset y decidir que variables son realmente utiles antes de reforzar la inferencia.
+
+### 8. Conclusiones del Dia 2
+
+En este segundo dia se ha definido la forma real de introducir una base de datos en el proyecto. La aplicacion deja de depender solo de reglas visuales fijas y se prepara para incorporar ejemplos reales, con etiquetas, metadatos y calculos de caracteristicas.
+
+El algoritmo actual responde con una puntuacion ponderada que combina rojo, contraste, zonas rojas intensas y densidad de bordes. Esa respuesta no es un diagnostico clinico, pero si permite construir un sistema trazable y mejorable a partir de una base de datos bien estructurada.
+
+La parte clave de este dia no es que el algoritmo sea perfecto; es que ya se ha validado que la base de datos es real, que la ingesta funciona y que existe una fase de educacion claramente definida antes del entrenamiento. La comparacion con la verdad del dataset y la referencia clinica ABCDE nos permite detectar que faltan criterios mas representativos de la lesion y que la mejora debera basarse en caracteristicas estructurales y morfologicas, no solo en color global.
+
+Este paso es clave para avanzar de la demo funcional a una fase de aprendizaje y validacion academica, donde cada nueva imagen sumara evidencia para ajustar el sistema, detectar la anomalia con mayor precision y preparar la siguiente evolucion hacia una version mas interpretable y mas cercana a la practica dermatologica.
+
+---

@@ -24,57 +24,45 @@ def index() -> str:
         <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
         <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />
         <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />
-        <link href=\"https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap\" rel=\"stylesheet\" />
+        <link href=\"https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&display=swap\" rel=\"stylesheet\" />
         <link rel=\"stylesheet\" href=\"/static/css/styles.css\" />
       </head>
       <body>
-        <div class=\"bg-orb orb-a\"></div>
-        <div class=\"bg-orb orb-b\"></div>
-        <main class=\"layout\">
-          <section class=\"hero\">
-            <p class=\"kicker\">TFG Ingenieria de la Salud</p>
-            <h1>Analisis dermatologico asistido por IA</h1>
-            <p class=\"subtitle\">
-              Subida de imagen, evaluacion automatica de riesgo y recomendacion clinica orientativa
-              en una sola vista preparada para demo.
-            </p>
-            <div class=\"tag-row\">
-              <span class=\"tag\">FastAPI</span>
-              <span class=\"tag\">Computer Vision</span>
-              <span class=\"tag\">Triage de riesgo</span>
-            </div>
-          </section>
+        <main class=\"landing\">
+          <div class=\"orb\"></div>
 
-          <section class=\"panel\">
-            <div class=\"upload-header\">
-              <h2>Analizar imagen</h2>
-              <p>Selecciona una imagen dermatologica y ejecuta el analisis.</p>
-            </div>
+          <h1 class=\"brand\">OLIVIA</h1>
+          <div class=\"brand-line\"></div>
 
-            <label class=\"file-drop\" for=\"img\">
-              <input id=\"img\" type=\"file\" accept=\"image/*\" />
-              <span id=\"fileName\">Arrastra o selecciona una imagen</span>
-            </label>
+          <p class=\"lead\">Si cuidas tu piel, iluminará tu futuro.</p>
+          <p class=\"sublead\">Selecciona una opción para comenzar tu análisis.</p>
 
-            <button id=\"analyzeButton\" class=\"analyze-btn\" type=\"button\">Analizar ahora</button>
+          <div class=\"options\">
+            <button class=\"option-btn\" type=\"button\" id=\"cameraBtn\">
+              <span class=\"dot\"></span>
+              <span>Usar cámara del móvil</span>
+            </button>
 
-            <article id=\"report\" class=\"report\">
-              Informe legible: pendiente de analisis.
-            </article>
+            <button class=\"option-btn upload-trigger\" type=\"button\" id=\"uploadBtn\">
+              <span class=\"dot\"></span>
+              <span>Subir archivo de imagen</span>
+            </button>
+          </div>
 
-            <section class=\"json-block\">
-              <header>
-                <h3>Salida JSON tecnica</h3>
-                <span class=\"pill\">machine-readable</span>
-              </header>
-              <pre id=\"result\">Esperando imagen...</pre>
-            </section>
+          <input id=\"img\" type=\"file\" accept=\"image/*\" hidden />
 
-            <p class=\"disclaimer\">
-              Aviso: esta herramienta es de apoyo y no reemplaza el diagnostico medico profesional.
-            </p>
-          </section>
+          <div class=\"result-panel\" id=\"resultPanel\" hidden>
+            <div class=\"mini-label\">Resultado del análisis</div>
+            <p id=\"analysisText\">No hay análisis todavía.</p>
+          </div>
+
+          <div class=\"json-box\" id=\"jsonBox\" hidden>
+            <pre id=\"result\">Esperando imagen...</pre>
+          </div>
+
+          <button id=\"analyzeButton\" class=\"analyze-btn\" type=\"button\">Analizar ahora</button>
         </main>
+
         <script src=\"/static/js/app.js\"></script>
       </body>
     </html>

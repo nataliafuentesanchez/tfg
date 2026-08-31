@@ -5,6 +5,23 @@ This format follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-31
+
+### Added
+- New landing screen design inspired by the minimalist OLIVIA aesthetic.
+- Result panel shown directly under the uploaded image and analysis output.
+- Improved user-facing analysis text with a cleaner narrative layout.
+- Continued preparation for dataset-based calibration before supervised training.
+
+### Changed
+- Updated the frontend UX to a lighter, more polished demo presentation.
+- Refined the analysis workflow so the textual report is visible immediately after processing.
+- Bumped the application version to `0.1.2`.
+
+### Fixed
+- Adjusted benign vs suspicious lesion threshold calibration to keep common NV examples safe while preserving suspicious lesion detection.
+- Verified backend and analysis tests continue passing after the UI update.
+
 ## [0.1.0] - 2026-07-24
 
 ### Added

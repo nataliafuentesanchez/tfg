@@ -6,15 +6,19 @@
 // =============================================================================
 
 const inputEl = document.getElementById("img");
-const fileNameEl = document.getElementById("fileName");
-const reportEl = document.getElementById("report");
 const resultEl = document.getElementById("result");
 const buttonEl = document.getElementById("analyzeButton");
+const uploadBtn = document.getElementById("uploadBtn");
+const cameraBtn = document.getElementById("cameraBtn");
+const analysisTextEl = document.getElementById("analysisText");
+const resultPanelEl = document.getElementById("resultPanel");
+const jsonBoxEl = document.getElementById("jsonBox");
 
 function setPendingState() {
   buttonEl.disabled = true;
   buttonEl.textContent = "Analizando...";
-  reportEl.textContent = "Informe legible: procesando imagen...";
+  analysisTextEl.textContent = "Procesando imagen y preparando el informe...";
+  resultPanelEl.hidden = false;
 }
 
 function resetButtonState() {
@@ -22,10 +26,15 @@ function resetButtonState() {
   buttonEl.textContent = "Analizar ahora";
 }
 
+function openFilePicker() {
+  inputEl.click();
+}
+
 async function sendImage() {
   if (!inputEl.files.length) {
-    reportEl.textContent = "Informe legible: selecciona una imagen para iniciar el analisis.";
-    resultEl.textContent = "Selecciona una imagen.";
+    analysisTextEl.textContent = "Selecciona una imagen para iniciar el análisis.";
+    resultPanelEl.hidden = false;
+    jsonBoxEl.hidden = true;
     return;
   }
 
@@ -38,16 +47,20 @@ async function sendImage() {
     const data = await res.json();
 
     if (!res.ok) {
-      reportEl.textContent = "Informe legible: ha ocurrido un error al procesar la imagen.";
+      analysisTextEl.textContent = "Ha ocurrido un error al procesar la imagen.";
       resultEl.textContent = JSON.stringify(data, null, 2);
+      jsonBoxEl.hidden = false;
       return;
     }
 
-    reportEl.textContent = `Informe legible: ${data.user_report || "No disponible."}`;
+    analysisTextEl.textContent = data.user_report || "No disponible.";
     resultEl.textContent = JSON.stringify(data, null, 2);
+    jsonBoxEl.hidden = false;
+    resultPanelEl.hidden = false;
   } catch (error) {
-    reportEl.textContent = "Informe legible: no se pudo conectar con el servidor.";
+    analysisTextEl.textContent = "No se pudo conectar con el servidor.";
     resultEl.textContent = `Error de red: ${error}`;
+    jsonBoxEl.hidden = false;
   } finally {
     resetButtonState();
   }
@@ -55,11 +68,15 @@ async function sendImage() {
 
 inputEl.addEventListener("change", () => {
   if (!inputEl.files.length) {
-    fileNameEl.textContent = "Arrastra o selecciona una imagen";
     return;
   }
 
-  fileNameEl.textContent = `Archivo seleccionado: ${inputEl.files[0].name}`;
+  if (analysisTextEl.textContent === "No hay análisis todavía.") {
+    analysisTextEl.textContent = "Imagen preparada. Pulsa analizar para obtener el informe.";
+    resultPanelEl.hidden = false;
+  }
 });
 
+uploadBtn.addEventListener("click", openFilePicker);
+cameraBtn.addEventListener("click", openFilePicker);
 buttonEl.addEventListener("click", sendImage);

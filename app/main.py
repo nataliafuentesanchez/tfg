@@ -18,7 +18,7 @@ def create_app() -> FastAPI:
             "API de apoyo para analisis dermatologico. "
             "No sustituye el diagnostico medico profesional."
         ),
-        version="0.1.0",
+        version="0.1.2",
     )
     app.mount("/static", StaticFiles(directory="app/static"), name="static")
     app.include_router(router)
