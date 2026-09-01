@@ -26,7 +26,7 @@
 
 - La calidad real del algoritmo se decide con datos autenticos, no con una sola prueba visual.
 - La mejora relevante se obtuvo al incorporar features morfologicas y de color, no solo por el nivel absoluto de rojo.
-- El siguiente salto importante sera la fase supervisada, pero solo despues de estabilizar la calibracion heuristica.
+- El falsopositivo dominante no era un caso de melanoma real sino un parche rojo amplio y simetrico, que requiere una regla de exclusion especifica antes de aceptar riesgo.- La repondeacion de features (reduciendo peso de lesion_ratio, aumentando mask_irregularity y asymmetry) es crucial para distinguir eritema/manchas vasculares (benignas) de lesiones genuinas.- El siguiente salto importante sera la fase supervisada, pero solo despues de estabilizar la calibracion heuristica.
 
 ## Guardrails
 

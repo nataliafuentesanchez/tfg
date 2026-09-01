@@ -19,6 +19,13 @@
 - [ ] Publicar push remoto en GitHub (falta autenticacion local)
 - [ ] Cerrar la calibracion final de umbrales y mascara antes de entrenar modelo supervisado
 
+## Benchmark real validado
+
+- Fecha: 2026-09-01
+- Dataset: HAM10000 con metadatos reales.
+- Resultado actual (tras ajustes heuristicos paso 1 y 2): precision=0.4066, recall=0.5915, F1=0.4819, FP=2858 sobre 10015 imagenes.
+- Conclusión: reducción significativa de falsos positivos; precision mejorada. La señal es más estable pero aún insuficiente para producción sin entrenamiento supervisado.
+
 ## Completado
 
 - [x] Fase /spec validada

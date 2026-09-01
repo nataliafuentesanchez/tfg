@@ -70,6 +70,20 @@ def test_common_nevus_is_not_flagged_as_suspicious() -> None:
     assert result.severity in {"ninguno", "bajo"}
 
 
+def test_large_symmetric_red_patch_is_not_marked_as_suspicious() -> None:
+    image = np.full((160, 160, 3), (180, 120, 110), dtype=np.uint8)
+    cv2.ellipse(image, (80, 80), (60, 50), 0, 0, 360, (30, 40, 180), -1)
+    cv2.ellipse(image, (80, 80), (28, 24), 0, 0, 360, (90, 180, 220), -1)
+
+    ok, encoded = cv2.imencode(".jpg", image)
+    assert ok
+
+    result = analyze_image(encoded.tobytes(), filename="large_symmetric_red_patch.jpg")
+
+    assert result.primary_label == "sano"
+    assert result.severity in {"ninguno", "bajo"}
+
+
 def test_real_common_nevus_image_is_not_marked_as_suspicious() -> None:
     image_path = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos/imagenes/HAM10000_images_part_1/ISIC_0026320.jpg"
     assert image_path
@@ -80,4 +94,4 @@ def test_real_common_nevus_image_is_not_marked_as_suspicious() -> None:
     result = analyze_image(encoded, filename="ISIC_0026320.jpg")
 
     assert result.primary_label == "sano"
-    assert result.severity == "bajo"
+    assert result.severity in {"ninguno", "bajo"}

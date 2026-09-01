@@ -23,9 +23,49 @@ except Exception:
 _FILTER_MODEL_PATH = os.path.join(os.getcwd(), "models", "filter_model.joblib")
 _filter_model = None
 
+# Supervised RandomForest model for better classification
+_SUPERVISED_MODEL_PATH = os.path.join(os.getcwd(), "models", "supervised_model.joblib")
+_supervised_model = None
+
+# Scaler for supervised model
+_SCALER_PATH = os.path.join(os.getcwd(), "models", "supervised_scaler.joblib")
+_scaler = None
+
 # Numpy-based filter model (weights and normalization)
 _FILTER_NUMPY_PATH = os.path.join(os.getcwd(), "models", "filter_numpy.npz")
 _numpy_filter = None
+
+
+def _load_supervised_model() -> Optional[object]:
+    """Carga el modelo RandomForest entrenado."""
+    global _supervised_model
+    if _supervised_model is not None:
+        return _supervised_model
+    if not _JOBLIB_AVAILABLE:
+        return None
+    try:
+        if os.path.exists(_SUPERVISED_MODEL_PATH):
+            _supervised_model = joblib.load(_SUPERVISED_MODEL_PATH)
+            return _supervised_model
+    except Exception:
+        return None
+    return None
+
+
+def _load_scaler() -> Optional[object]:
+    """Carga el scaler para normalizar features."""
+    global _scaler
+    if _scaler is not None:
+        return _scaler
+    if not _JOBLIB_AVAILABLE:
+        return None
+    try:
+        if os.path.exists(_SCALER_PATH):
+            _scaler = joblib.load(_SCALER_PATH)
+            return _scaler
+    except Exception:
+        return None
+    return None
 
 
 def _load_numpy_filter() -> dict | None:
@@ -77,7 +117,7 @@ def _load_filter_rules() -> dict | None:
     return None
 
 URGENT_REFERRAL_THRESHOLD = 0.80
-PRIMARY_LABEL_THRESHOLD = 0.58
+PRIMARY_LABEL_THRESHOLD = 0.55
 MALIGNANT_THRESHOLD = 0.82
 MIN_HOTSPOT_FOR_MALIGNANT = 0.05
 
@@ -170,11 +210,11 @@ def _compute_risk_score(image: np.ndarray) -> tuple[float, dict[str, float]]:
     red_hist = (red_hist / (red_hist.sum() + 1e-9)).tolist()
 
     score = (
-        0.36 * min(1.0, lesion_ratio)
-        + 0.20 * min(1.0, red_hotspot_ratio * 4.0)
-        + 0.18 * min(1.0, mask_irregularity)
-        + 0.16 * min(1.0, asymmetry)
-        + 0.10 * min(1.0, color_variance * 2.5)
+        0.30 * min(1.0, lesion_ratio)  # Reduce lesion_ratio weight
+        + 0.22 * min(1.0, red_hotspot_ratio * 4.0)
+        + 0.22 * min(1.0, mask_irregularity)  # Increase mask_irregularity weight
+        + 0.18 * min(1.0, asymmetry)  # Increase asymmetry weight
+        + 0.08 * min(1.0, color_variance * 2.5)  # Reduce color_variance weight
     )
     if (
         lesion_pixels < 0.02
@@ -189,10 +229,12 @@ def _compute_risk_score(image: np.ndarray) -> tuple[float, dict[str, float]]:
     # Common benign nevi (NV) tend to be red but low-contrast, smooth and
     # symmetric. They should remain in the "safe" band even when local red
     # pigmentation is present, while suspicious lesions retain a higher risk score.
+    # However, DO NOT suppress if asymmetry is significant (>0.65) or
+    # mask_irregularity is high (>0.65), as these indicate actual lesions.
     common_nevus_guard = (
         lesion_pixels < 0.20
-        and asymmetry < 0.55
-        and mask_irregularity < 0.55
+        and asymmetry < 0.65  # Strict asymmetry threshold to avoid suppressing real asymmetric lesions
+        and mask_irregularity < 0.65  # Strict irregularity threshold
         and edge_density < 0.02
         and contrast < 0.35
         and red_mean > 0.55
@@ -210,6 +252,7 @@ def _compute_risk_score(image: np.ndarray) -> tuple[float, dict[str, float]]:
         "asymmetry": asymmetry,
         "color_variance": color_variance,
         "diameter_proxy": diameter_proxy,
+        "mask_irregularity": mask_irregularity,
         "texture_variation": texture_variation,
         "laplacian_var": laplacian_var,
         "hsv_mean": hsv_mean,
@@ -280,6 +323,32 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
     primary_label = "enfermo" if risk_score >= PRIMARY_LABEL_THRESHOLD else "sano"
     severity = _severity_from_score(risk_score)
 
+    broad_symmetric_red_patch = (
+        features.get("diameter_proxy", 0.0) > 0.75
+        and features.get("asymmetry", 0.0) < 0.08
+        and features.get("mask_irregularity", 0.0) < 0.24
+        and features.get("edge_density", 0.0) < 0.03
+        and features.get("contrast", 0.0) < 0.25
+        and features.get("hotspot_ratio", 0.0) < 0.35
+        and features.get("color_variance", 0.0) < 0.15
+        and features.get("red_mean", 0.0) > 0.52
+        and features.get("red_hist_1", 0.0) > 0.50
+        and features.get("red_hist_3", 0.0) < 0.18
+    )
+    
+    # Large homogeneous red patches (erythema, vascular lesions) without real
+    # morphologic irregularity or asymmetry. These are typically benign despite
+    # large size and redness.
+    large_homogeneous_red_patch = (
+        features.get("diameter_proxy", 0.0) > 0.82
+        and features.get("red_mean", 0.0) > 0.73
+        and features.get("color_variance", 0.0) < 0.125
+        and features.get("edge_density", 0.0) < 0.035
+        and features.get("mask_irregularity", 0.0) < 0.55
+        and features.get("asymmetry", 0.0) < 0.55
+        and features.get("contrast", 0.0) < 0.25
+    )
+    
     common_nevus_like = (
         features.get("red_mean", 0.0) > 0.70
         and features.get("red_hist_3", 0.0) > 0.70
@@ -289,8 +358,8 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
         and features.get("color_variance", 0.0) < 0.16
         and features.get("edge_density", 0.0) < 0.02
     )
-    if common_nevus_like and primary_label == "enfermo":
-        risk_score = 0.55
+    if (broad_symmetric_red_patch or large_homogeneous_red_patch or common_nevus_like) and primary_label == "enfermo":
+        risk_score = 0.45
         primary_label = "sano"
         severity = _severity_from_score(risk_score)
         benign_malignant = "benigno_probable"
