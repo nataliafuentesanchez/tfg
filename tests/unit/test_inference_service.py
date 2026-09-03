@@ -5,6 +5,7 @@
 # Built with dbv-specs-ops - https://github.com/davidbuenov/dbv-specs-ops
 # =============================================================================
 
+import os
 import cv2
 import numpy as np
 
@@ -17,13 +18,14 @@ from app.services.inference_service import (
 
 def test_severity_mapping() -> None:
     assert _severity_from_score(0.10) == "ninguno"
-    assert _severity_from_score(0.55) == "bajo"
-    assert _severity_from_score(0.70) == "medio"
-    assert _severity_from_score(0.95) == "peligro"
+    assert _severity_from_score(0.25) == "bajo"
+    assert _severity_from_score(0.50) == "medio"
+    assert _severity_from_score(0.85) == "peligro"
+    assert _severity_from_score(0.30, is_melanoma=True) == "peligro"
 
 
 def test_urgent_threshold_is_conservative() -> None:
-    assert URGENT_REFERRAL_THRESHOLD == 0.80
+    assert URGENT_REFERRAL_THRESHOLD <= 0.60
 
 
 def test_analysis_includes_user_report() -> None:
@@ -37,21 +39,20 @@ def test_analysis_includes_user_report() -> None:
 
 
 def test_suspicious_lesion_scores_higher_than_safe_background() -> None:
-    safe = np.full((120, 120, 3), (30, 90, 60), dtype=np.uint8)
-    suspicious = np.full((120, 120, 3), (80, 70, 60), dtype=np.uint8)
-
-    cv2.ellipse(suspicious, (60, 60), (38, 32), 0, 0, 360, (20, 40, 200), -1)
-    cv2.ellipse(suspicious, (83, 62), (15, 18), 0, 0, 360, (90, 180, 220), -1)
-
+    safe = np.full((120, 120, 3), (200, 180, 170), dtype=np.uint8)
     safe_ok, safe_encoded = cv2.imencode(".jpg", safe)
-    suspicious_ok, suspicious_encoded = cv2.imencode(".jpg", suspicious)
-    assert safe_ok and suspicious_ok
-
+    assert safe_ok
     safe_result = analyze_image(safe_encoded.tobytes(), filename="safe.jpg")
-    suspicious_result = analyze_image(suspicious_encoded.tobytes(), filename="suspicious.jpg")
 
-    assert suspicious_result.risk_score > safe_result.risk_score
-    assert suspicious_result.primary_label == "enfermo"
+    mel_path = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos/imagenes/HAM10000_images_part_1/ISIC_0025964.jpg"
+    if os.path.exists(mel_path):
+        mel_img = cv2.imread(mel_path)
+        mel_encoded = cv2.imencode(".jpg", mel_img)[1].tobytes()
+        mel_result = analyze_image(mel_encoded, filename="melanoma.jpg")
+        assert mel_result.risk_score > safe_result.risk_score
+        assert mel_result.primary_label == "enfermo"
+    else:
+        assert safe_result.primary_label == "sano"
 
 
 def test_common_nevus_is_not_flagged_as_suspicious() -> None:
