@@ -1228,6 +1228,7 @@ Para la defensa de tu TFG es fundamental que domines la justificacion teorica y 
   $$\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x}$$
   Esto permite que el gradiente fluya directamente sin obstaculos durante el entrenamiento (*backpropagation*), permitiendo un aprendizaje estable y rapido de patrones complejos.
 
+<<<<<<< HEAD
 -Se encontro dicha red en esta pagina:
 `miloszkrawczyk/skin-lesion-classifier` en Hugging Face
 Es una ResNet18 preentrenada con ImageNet y posteriormente ajustada con HAM10000. Además, hay algo que me gusta muchísimo para tu TFG: el autor indica que hizo el split por lesión (lesion_id) y no por fotografía, exactamente como estamos planteando hacer nosotros.
@@ -1247,6 +1248,11 @@ vasc
 y después calcula una probabilidad de lesión maligna.
 
 La respuesta sobre si es maligno o benigno no proviene de la clase ganadora. En su lugar, se suman las probabilidades de los tres diagnósticos malignos (akiec, bcc, mel) y se compara el total con 0,15. Una fotografía con una puntuación de 0,30 para melanoma y 0,29 para carcinoma basocelular se clasifica como un lunar común según la regla de la clase principal, pero es marcada como sospechosa mediante este otro criterio.
+=======
+#### 2. Para que sirve en el ambito de la dermatologia
+ResNet-18 cuenta con **18 capas convolucionales profundas** preentrenadas sobre el dataset *ImageNet* (mas de 1.2 millones de imagenes naturales). Esto le otorga la capacidad previa de reconocer lineas, contrastes, curvaturas y texturas.
+Al aplicar **Transfer Learning**, transferimos ese conocimiento visual previo para especializar a la red en la deteccion de signos dermatoscopicos criticos: redes pigmentarias atipicas, velos azul-blanquecinos, puntos/globulos pigmentados, estrias de regresion y patrones vasculares.
+>>>>>>> 0dd04653fb41dd0712b33bf92fca0d1574c50a36
 
 #### 3. Como la hemos modificado y adaptado a nuestro ecosistema
 La arquitectura original de ResNet-18 no podia utilizarse directamente porque estaba disenada para clasificar 1.000 categorias genericas de objetos (coches, animales, plantas) y no patologias cutaneas. Para adaptarla a **OLIVIA**, realizamos las siguientes modificaciones:
@@ -1344,12 +1350,67 @@ def _extract_abcde_features(image: np.ndarray) -> Dict[str, Any]:
 
 ---
 
+<<<<<<< HEAD
+=======
+## 6. Hoja de Ruta de Mejoras para Elevar el TFG al Maximo Nivel (Convocatoria de Febrero)
+
+Para convertir este proyecto en una matricula de honor o maxima calificacion ante el tribunal de la Universidad de Malaga, se establecen las siguientes lineas de mejora ordenadas por impacto:
+
+```mermaid
+flowchart TD
+    subgraph Fase 1: IA y Explicabilidad Avanzada
+        G[Mapas de Calor Grad-CAM: Resaltar en la imagen la zona que activo la alarma]
+        E[Ensemble Multimodelo: ResNet-18 + EfficientNet-B0]
+    end
+    subgraph Fase 2: Robustez y Datos Clinicos
+        P[Integracion de PAD-UFES-20: Entrenamiento con fotos de smartphone]
+        T[Modo Dual: Selector de Fotografia Clinica vs Dermatoscopia]
+    end
+    subgraph Fase 3: Producto Clinico y Memoria
+        PDF[Generador de Informe Clinico en PDF descargable]
+        MEM[Redaccion formal de la Memoria y Diapositivas de Defensa]
+    end
+    
+    Fase 1 --> Fase 2 --> Fase 3
+```
+
+### 6.1 Mejoras de Modelo e Inteligencia Artificial
+1. **Mapas de Calor de Atencion Visual (*Grad-CAM*):**
+   - Implementar *Gradient-weighted Class Activation Mapping* para proyectar un mapa de calor sobre la foto de la lesion, mostrando exactamente que region (ej. un borde irregular o una red atipica) motivo la prediccion de melanoma.
+2. **Ensemble Multimodelo (*ResNet-18 + EfficientNet-B0*):**
+   - Combinar las predicciones de dos arquitecturas distintas para elevar el Macro F1 por encima del 0.70 y el Recall al 85%.
+3. **Test-Time Augmentation (TTA):**
+   - En la inferencia web, evaluar la imagen original junto con 3 versiones rotadas y promediar las probabilidades, reduciendo errores aleatorios por iluminacion.
+
+### 6.2 Mejoras de Robustez con Fotos de Movil (PAD-UFES-20)
+- Aunque HAM10000 es el estandar mundial en dermatoscopia, incluir fotos clinicas reales de smartphones (dataset PAD-UFES-20) permitira que cuando un usuario use la camara de su movil o portatil, la red sea todavia mas tolerante a fondos con pelo, sombras o enfoque variable.
+
+### 6.3 Mejoras de UX y Software Clinico
+1. **Generador de Informe Medico en PDF:**
+   - Añadir un boton *"Descargar Informe Clinico (PDF)"* con la cabecera del paciente, la foto analizada, el mapa de calor, el diagnostico de la CNN, el desglose ABCDE y el descargo legal.
+2. **Historial de Seguimiento Evolutivo (Criterio "E"):**
+   - Permitir guardar varias fotos de la misma lesion en el tiempo para comparar si ha aumentado de diametro o cambiado de color entre visitas.
+
+### 6.4 Estructura Recomendada para la Redaccion de la Memoria del TFG
+
+| Capitulo de la Memoria | Contenido Clave a Incluir desde este Repositorio |
+|---|---|
+| **1. Introduccion y Objetivos** | Problematica del cancer de piel, retraso diagnostico y objetivo de cribado asistido por IA. |
+| **2. Estado del Arte** | Metodologia clinica ABCDE, dermatoscopia digital, vision por computador y redes convolucionales en salud. |
+| **3. Materiales y Metodos** | Dataset HAM10000, particion agrupada por `lesion_id`, tecnicas de data augmentation, arquitectura ResNet-18, funcion de perdida ponderada y modulo biometrico ABCDE. |
+| **4. Resultados y Validacion** | Tabla comparativa (Heuristica vs CNN), matriz de confusion (`docs/confusion_matrix_cnn.png`), curvas de aprendizaje (`docs/training_curves_cnn.png`) y metricas por patologia. |
+| **5. Discusion y Trabajo Futuro** | Analisis de falsos positivos/negativos, interpretabilidad XAI, transicion a fotos moviles y multimodalidad futura (termografia). |
+| **6. Conclusiones** | Cumplimiento de objetivos, validacion del flujo web y aplicabilidad en atencion primaria. |
+
+---
+>>>>>>> 0dd04653fb41dd0712b33bf92fca0d1574c50a36
 
 ## 7. Estado del Proyecto al Cierre del Dia 4
 
 - **Backend:** FastAPI + PyTorch totalmente operativo con modelo ResNet-18 (`models/best_skin_cnn.pth`).
 - **Frontend:** Interfaz web OLIVIA con modal de camara en directo, previsualizacion e informe explicativo ABCDE.
 - **Validacion:** 11 de 11 tests unitarios e integracion superados en 3.29s.
+<<<<<<< HEAD
 
 ### 7.1 Resumen: Que Ha Fallado, Que Se Ha Liado y Que Se Ha Mejorado
 Tras integrar la ResNet-18 en produccion se detecto un problema critico de triage que obligo a una segunda ronda de ajustes ese mismo dia. A modo de resumen ejecutivo para la memoria:
@@ -1469,3 +1530,6 @@ La estrategia de trabajo seguirá siendo iterativa:
 Evaluar → detectar errores → proponer una mejora → implementarla → volver a evaluar.
 De esta manera, las siguientes etapas se decidirán a partir de los resultados obtenidos, evitando introducir modificaciones que no aporten una mejora demostrable al sistema.
 
+=======
+- **Memoria:** Documentacion exhaustiva, metricas y graficos listos para redactar el TFG.
+>>>>>>> 0dd04653fb41dd0712b33bf92fca0d1574c50a36
