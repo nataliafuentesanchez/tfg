@@ -1,0 +1,27 @@
+{
+  "dx_map": {
+    "nv": 0,
+    "mel": 1,
+    "bkl": 2,
+    "bcc": 3,
+    "akiec": 4,
+    "vasc": 5,
+    "df": 6
+  },
+  "dx_names": [
+    "nv (Nevus)",
+    "mel (Melanoma)",
+    "bkl (Queratosis Benigna)",
+    "bcc (Carcinoma Basocelular)",
+    "akiec (Queratosis Actinica)",
+    "vasc (Vascular)",
+    "df (Dermatofibroma)"
+  ],
+  "malignant_classes": [
+    "bcc",
+    "mel",
+    "akiec"
+  ],
+  "test_accuracy": 0.7402945113788487,
+  "test_macro_f1": 0.6080640025822005
+}

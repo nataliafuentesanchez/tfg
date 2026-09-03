@@ -9,16 +9,18 @@ const inputEl = document.getElementById("img");
 const resultEl = document.getElementById("result");
 const buttonEl = document.getElementById("analyzeButton");
 const uploadBtn = document.getElementById("uploadBtn");
-const cameraBtn = document.getElementById("cameraBtn");
 const analysisTextEl = document.getElementById("analysisText");
 const resultPanelEl = document.getElementById("resultPanel");
 const jsonBoxEl = document.getElementById("jsonBox");
+const previewCard = document.getElementById("previewCard");
+const previewImg = document.getElementById("previewImg");
 
 function setPendingState() {
   buttonEl.disabled = true;
-  buttonEl.textContent = "Analizando...";
-  analysisTextEl.textContent = "Procesando imagen y preparando el informe...";
-  resultPanelEl.hidden = false;
+  buttonEl.textContent = "Analizando con Red Neuronal...";
+  analysisTextEl.textContent = "Procesando imagen con ResNet-18 y calculando diagnóstico...";
+  resultPanelEl.style.display = "block";
+  jsonBoxEl.style.display = "none";
 }
 
 function resetButtonState() {
@@ -31,15 +33,16 @@ function openFilePicker() {
 }
 
 async function sendImage() {
-  if (!inputEl.files.length) {
-    analysisTextEl.textContent = "Selecciona una imagen para iniciar el análisis.";
-    resultPanelEl.hidden = false;
-    jsonBoxEl.hidden = true;
+  if (!inputEl.files || !inputEl.files.length) {
+    analysisTextEl.textContent = "Por favor, selecciona una imagen primero.";
+    resultPanelEl.style.display = "block";
+    jsonBoxEl.style.display = "none";
     return;
   }
 
+  const fileToSend = inputEl.files[0];
   const fd = new FormData();
-  fd.append("file", inputEl.files[0]);
+  fd.append("file", fileToSend);
 
   setPendingState();
   try {
@@ -49,34 +52,38 @@ async function sendImage() {
     if (!res.ok) {
       analysisTextEl.textContent = "Ha ocurrido un error al procesar la imagen.";
       resultEl.textContent = JSON.stringify(data, null, 2);
-      jsonBoxEl.hidden = false;
+      jsonBoxEl.style.display = "block";
       return;
     }
 
     analysisTextEl.textContent = data.user_report || "No disponible.";
     resultEl.textContent = JSON.stringify(data, null, 2);
-    jsonBoxEl.hidden = false;
-    resultPanelEl.hidden = false;
+    jsonBoxEl.style.display = "block";
+    resultPanelEl.style.display = "block";
   } catch (error) {
     analysisTextEl.textContent = "No se pudo conectar con el servidor.";
     resultEl.textContent = `Error de red: ${error}`;
-    jsonBoxEl.hidden = false;
+    jsonBoxEl.style.display = "block";
   } finally {
     resetButtonState();
   }
 }
 
 inputEl.addEventListener("change", () => {
-  if (!inputEl.files.length) {
-    return;
-  }
+  if (!inputEl.files.length) return;
 
-  if (analysisTextEl.textContent === "No hay análisis todavía.") {
-    analysisTextEl.textContent = "Imagen preparada. Pulsa analizar para obtener el informe.";
-    resultPanelEl.hidden = false;
-  }
+  const file = inputEl.files[0];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    previewImg.src = e.target.result;
+    previewCard.style.display = "flex";
+  };
+  reader.readAsDataURL(file);
+
+  analysisTextEl.textContent = `Imagen '${file.name}' cargada. Haz clic en 'Analizar ahora'.`;
+  resultPanelEl.style.display = "block";
+  jsonBoxEl.style.display = "none";
 });
 
 uploadBtn.addEventListener("click", openFilePicker);
-cameraBtn.addEventListener("click", openFilePicker);
 buttonEl.addEventListener("click", sendImage);

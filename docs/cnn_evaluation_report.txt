@@ -1,0 +1,17 @@
+Evaluacion Clinica ResNet-18 HAM10000 (Test Set)
+Accuracy Global: 74.03%
+Macro F1-Score: 0.6081
+
+                             precision    recall  f1-score   support
+
+                 nv (Nevus)     0.9633    0.7641    0.8522       996
+             mel (Melanoma)     0.4265    0.6364    0.5107       187
+   bkl (Queratosis Benigna)     0.5738    0.6908    0.6269       152
+bcc (Carcinoma Basocelular)     0.5556    0.7353    0.6329        68
+akiec (Queratosis Actinica)     0.4945    0.7143    0.5844        63
+            vasc (Vascular)     0.5833    1.0000    0.7368        21
+        df (Dermatofibroma)     0.2000    0.7143    0.3125         7
+
+                   accuracy                         0.7403      1494
+                  macro avg     0.5424    0.7507    0.6081      1494
+               weighted avg     0.8092    0.7403    0.7611      1494

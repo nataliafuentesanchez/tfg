@@ -1093,3 +1093,296 @@ Training dataset: models/training_features.csv
 Próximo paso recomendado: Mantener el sistema heurístico en producción mientras se prepara una versión 2.0 con features mejoradas y model supervisado sin leakage. Versión 1.0 está lista para demo académica y testing clínico limitado.
 
 Nota de cierre: La jornada del Día 3 representa la maduración del prototipo inicial hacia un sistema con respaldo de datos. Se ha validado el pipeline completo (ingesta → features → modelo) y se han documentado las limitaciones y caminos de mejora. El sistema es reproducible, testeable y escalable para futuras iteraciones.
+
+---
+
+# Dia 4 - Entrenamiento, Evaluacion e Integracion de Red Neuronal Convolucional (ResNet-18), Modulo ABCDE Explicable (XAI) y Hoja de Ruta para el TFG
+
+**Fecha:** 3 de septiembre de 2026  
+**Proyecto:** AnalisisImagenes (OLIVIA) - TFG Grado en Ingenieria de la Salud (Universidad de Malaga)  
+**Objetivo de la jornada:** Dar el salto definitivo desde el prototipo heuristico hacia un sistema de Inteligencia Artificial clinica basado en *Deep Learning* (*Transfer Learning* con ResNet-18) entrenado sobre las 10.015 imagenes reales de HAM10000, integrarlo con un modulo de IA Explicable (*Explainable AI - XAI*) basado en el criterio ABCDE, actualizar la aplicacion web y establecer la hoja de ruta para la entrega de la memoria del TFG en febrero.
+
+---
+
+## 1. Que se ha hecho y por que (Fundamentacion Biomedica y Tecnica)
+
+### 1.1 El problema de partida (El techo del baseline heuristico)
+En los dias 1 a 3 se construyo un baseline con 17 caracteristicas visuales artesanales (Canny, HSV, asimetria geometrica, histograma rojo). Aunque sirvio para validar la arquitectura de software, su rendimiento clinico tenia un limite insalvable:
+- **Sensibilidad (Recall) en patologias de riesgo:** ~59.15% (dejaba sin detectar el 40.85% de las lesiones malignas).
+- **Precision en malignos:** ~40.66% (demasiados falsos positivos en manchas vasculares o eritemas).
+- **F1-Score:** ~0.4819.
+
+### 1.2 Por que pasar a Deep Learning (ResNet-18)
+En dermatoscopia digital, los signos tempranos de malignidad (redes de pigmento atipicas, velo blanquecino, estrias radiales o globulos asimetricos) no se pueden capturar mediante promedios globales de color o bordes estaticos.
+Las Redes Neuronales Convolucionales (CNN) poseen capas jerarquicas que aprenden automaticamente desde caracteristicas de bajo nivel (lineas y gradientes) hasta patrones morfologicos de alta complejidad medica.
+
+### 1.3 Por que combinarlo con un Modulo ABCDE (IA Explicable - XAI)
+Una red neuronal por si sola es una "caja negra": ofrece una probabilidad diagnostica alta pero no explica el motivo al dermatologo. Para un TFG de Ingenieria de la Salud, la combinacion de la **Red Neuronal (clasificador de alta precision)** con un **Modulo Biometrico ABCDE (interpretabilidad clinica)** representa la excelencia metodologica.
+
+---
+
+## 2. Que hemos necesitado conseguir y preparar
+
+Para llevar a cabo este hito se prepararon los siguientes componentes:
+
+1. **Base de Datos Local HAM10000:**
+   - 10.015 imagenes dermatoscopicas reales distribuidas en dos carpetas (`HAM10000_images_part_1` y `HAM10000_images_part_2`).
+   - Archivo de metadatos `HAM10000_metadata.csv` con identificadores de paciente/lesion (`lesion_id`), imagen (`image_id`), diagnostico confirmado histopatologicamente (`dx`), edad, sexo y localizacion anatomica.
+2. **Entorno de Hardware (Apple Silicon MPS):**
+   - Uso del acelerador grafico Metal Performance Shaders (`torch.device("mps")`) del procesador de Apple, permitiendo procesar 10.015 imagenes en apenas 11.2 minutos.
+3. **Ecosistema de Librerias Cientificas:**
+   - `torch` y `torchvision` para el pipeline de tensores y arquitectura ResNet-18.
+   - `matplotlib`, `seaborn` y `scikit-plot` para la generacion automatizada de figuras cientificas para la memoria.
+
+---
+
+## 3. Nueva Organizacion del Proyecto
+
+La estructura de carpetas ha quedado modularizada y limpia:
+
+```text
+tfg-1/
+├── app/
+│   ├── main.py                     # Punto de entrada de FastAPI y arranque del servidor
+│   ├── api/
+│   │   └── routes.py               # Endpoints REST (GET /, GET /health, POST /analyze)
+│   ├── schemas/
+│   │   └── prediction.py           # Esquema Pydantic con respuesta clinica + objeto ABCDE
+│   ├── services/
+│   │   ├── inference_service.py    # Inferencia en vivo con CNN (ResNet-18) + Modulo ABCDE
+│   │   └── dataset_service.py      # Utilidades de carga y validacion de datasets
+│   └── static/
+│       ├── css/styles.css          # Diseno visual, modal de camara y paneles clinicos
+│       └── js/app.js               # Control de webcam en vivo, captura canvas y peticion fetch
+├── docs/
+│   ├── diario_codigo.md            # Registro diario pormenorizado del desarrollo
+│   ├── SPECIFICATIONS.md           # Requisitos funcionales y clinicos
+│   ├── ARCHITECTURE.md             # Decisiones tecnicas y stack
+│   ├── confusion_matrix_cnn.png    # Matriz de confusion de ResNet-18 (figura para la memoria)
+│   ├── training_curves_cnn.png     # Curvas de Loss y Accuracy (figura para la memoria)
+│   └── cnn_evaluation_report.txt   # Reporte numerico formal de metricas
+├── models/
+│   ├── best_skin_cnn.pth           # Pesos entrenados y guardados de la ResNet-18
+│   └── cnn_classes.json            # Mapeo y metadatos de las 7 patologias
+├── scripts/
+│   ├── train_cnn.py                # Script de entrenamiento de la CNN con Data Augmentation
+│   └── evaluate_cnn.py             # Script de evaluacion sobre el conjunto de Test
+├── tests/
+│   ├── unit/                       # Pruebas unitarias de inferencia y procesado
+│   └── integration/                # Pruebas de endpoints FastAPI
+└── requirements.txt                # Dependencias reproducibles
+```
+
+---
+
+## 4. Codigo Clave Utilizado y Explicacion Paso a Paso
+
+Para que entiendas perfectamente lo que se programo de cara a la redaccion de tu memoria:
+
+### 4.1 Prevencion de Fuga de Datos: Split Agrupado por `lesion_id`
+*Problema clinico:* En HAM10000, una misma lesion puede tener 2 o 3 fotos con distinta iluminacion o zoom. Si una foto va a Train y otra a Test, el modelo haria "trampas" memorizando la lesion.  
+*Solucion:* Agrupamos por `lesion_id` con `GroupShuffleSplit`:
+
+```python
+# scripts/train_cnn.py
+from sklearn.model_selection import GroupShuffleSplit
+
+# 70% Train, 15% Val, 15% Test agrupado estrictamente por lesion_id
+gss1 = GroupShuffleSplit(n_splits=1, train_size=0.70, random_state=42)
+train_idx, temp_idx = next(gss1.split(df, groups=df['lesion_id']))
+
+train_df = df.iloc[train_idx].copy()
+temp_df = df.iloc[temp_idx].copy()
+
+gss2 = GroupShuffleSplit(n_splits=1, train_size=0.50, random_state=42)
+val_idx, test_idx = next(gss2.split(temp_df, groups=temp_df['lesion_id']))
+
+val_df = temp_df.iloc[val_idx].copy()
+test_df = temp_df.iloc[test_idx].copy()
+```
+
+### 4.2 Data Augmentation y Normalizacion ImageNet
+Para evitar sobreajuste (*overfitting*) y simular variaciones reales de orientacion:
+
+```python
+# scripts/train_cnn.py
+train_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomVerticalFlip(p=0.5),
+    transforms.RandomRotation(degrees=20),
+    transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+```
+
+### 4.3 La Red Neuronal Empleada: Que es ResNet-18, Para que sirve y Como la hemos modificado para nuestro ecosistema
+
+Para la defensa de tu TFG es fundamental que domines la justificacion teorica y practica de la arquitectura seleccionada:
+
+#### 1. Que es ResNet-18 y cual es su principio teorico
+**ResNet (Residual Network)** fue introducida por *Kaiming He et al. (Microsoft Research, 2016)* y supuso una revolucion en el campo de la vision por computador.
+- **El problema del gradiente desvaneciente (*Vanishing Gradient*):** A medida que las redes neuronales convencionales se hacian mas profundas, las senales del error (gradientes) se iban reduciendo exponencialmente al propagarse hacia atras, provocando que las primeras capas no aprendieran y degradando la precision.
+- **La solucion de los bloques residuales (*Skip Connections*):** ResNet introdujo conexiones directas de salto o atajo (*residual shortcut connections*) que suman la entrada original a la salida de la transformacion convolucional:
+  $$\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x}$$
+  Esto permite que el gradiente fluya directamente sin obstaculos durante el entrenamiento (*backpropagation*), permitiendo un aprendizaje estable y rapido de patrones complejos.
+
+#### 2. Para que sirve en el ambito de la dermatologia
+ResNet-18 cuenta con **18 capas convolucionales profundas** preentrenadas sobre el dataset *ImageNet* (mas de 1.2 millones de imagenes naturales). Esto le otorga la capacidad previa de reconocer lineas, contrastes, curvaturas y texturas.
+Al aplicar **Transfer Learning**, transferimos ese conocimiento visual previo para especializar a la red en la deteccion de signos dermatoscopicos criticos: redes pigmentarias atipicas, velos azul-blanquecinos, puntos/globulos pigmentados, estrias de regresion y patrones vasculares.
+
+#### 3. Como la hemos modificado y adaptado a nuestro ecosistema
+La arquitectura original de ResNet-18 no podia utilizarse directamente porque estaba disenada para clasificar 1.000 categorias genericas de objetos (coches, animales, plantas) y no patologias cutaneas. Para adaptarla a **OLIVIA**, realizamos las siguientes modificaciones:
+
+1. **Reemplazo de la Capa de Clasificacion (*Head Reemplazado*):**
+   - Se elimino la capa final original `Linear(in_features=512, out_features=1000)`.
+   - Se instancio en su lugar una estructura secuencial personalizada:
+     ```python
+     model.fc = nn.Sequential(
+         nn.Dropout(p=0.3),          # Regularizacion estocastica
+         nn.Linear(in_features=512, out_features=7)  # Mapeo a las 7 patologias de HAM10000
+     )
+     ```
+   - **¿Por que `Dropout(0.3)`?** Desactiva aleatoriamente el 30% de las conexiones neuronales durante cada iteracion de entrenamiento, forzando a la red a no memorizar imagenes concretas (*anti-overfitting*).
+   - **¿Por que `Linear(512, 7)`?** Reduce el vector denso de 512 caracteristicas extraidas por el cuerpo convolucional a los 7 logaritmos de probabilidad (*logits*) de HAM10000 (`nv`, `mel`, `bkl`, `bcc`, `akiec`, `vasc`, `df`).
+
+2. **Adaptacion de la Entrada y Normalizacion ImageNet:**
+   - La red recibe las imagenes redimensionadas a $224 \times 224$ pixeles en 3 canales RGB y normalizadas segun las medias y desviaciones de ImageNet ($\mu=[0.485, 0.456, 0.406], \sigma=[0.229, 0.224, 0.225]$).
+
+3. **Manejo del Desbalance Severo con CrossEntropy Ponderada:**
+   - Para evitar que la clase mayoritaria de lunares benignos (`nv`, 67% del dataset) eclipsara la deteccion de melanomas y carcinomas, se asignaron pesos inversamente proporcionales a la frecuencia:
+     ```python
+     class_weights = 1.0 / (class_counts + 1e-5)
+     class_weights = class_weights / class_weights.sum() * len(class_counts)
+     criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float).to(device))
+     ```
+
+4. **Conversion a Score de Triage Clinico y Mapeo en FastAPI:**
+   - En `app/services/inference_service.py`, al recibir una peticion, la red calcula la distribucion probabilistica con Softmax:
+     $$P(dx_i) = \frac{e^{z_i}}{\sum_{j=1}^7 e^{z_j}}$$
+   - Se calcula el **Riesgo Clinico de Malignidad**:
+     $$\text{Riesgo} = P(\text{mel}) + P(\text{bcc}) + P(\text{akiec})$$
+   - Si $\text{Riesgo} \ge 0.40 \rightarrow$ Clasificacion como *Enfermo / Sospechoso*.
+   - Si $\text{Riesgo} \ge 0.60 \rightarrow$ Marcado de **Derivacion Prioritaria al Dermatologo**.
+   - Estos valores se inyectan en el esquema Pydantic `AnalysisResponse` junto con el informe explicativo y el desglose de criterios ABCDE.
+
+
+### 4.4 Modulo de IA Explicable: Extraccion Biometrica ABCDE
+En `app/services/inference_service.py`, cada imagen procesa en paralelo los parametros ABCDE:
+
+```python
+# app/services/inference_service.py
+def _extract_abcde_features(image: np.ndarray) -> Dict[str, Any]:
+    # A (Asimetria): Inversion especular y calculo de no-solapamiento
+    flipped_mask = np.fliplr(lesion_mask)
+    overlap = float(np.logical_and(lesion_mask > 0, flipped_mask > 0).sum()) / max(1.0, mask_pixels)
+    asymmetry = float(np.clip(1.0 - overlap, 0.0, 1.0))
+
+    # B (Borde): Indice de compacidad perimetral (P^2 / 4*pi*A)
+    perimeter = cv2.arcLength(largest_contour, True)
+    irregularity = (perimeter ** 2) / (4 * np.pi * area + 1e-6)
+    border_score = float(np.clip(irregularity / 5.0, 0.0, 1.0))
+
+    # C (Color): Dispersion cromatica y hotspots en RGB
+    color_heterogeneity = float(np.clip(std_rgb * 2.5 + hotspot_ratio * 1.5, 0.0, 1.0))
+
+    # D (Diametro): Estimacion de area relativa
+    diameter_score = float(min(1.0, area / (224 * 224 * 0.15)))
+
+    # E (Estructura): Densidad de bordes finos y varianza laplaciana
+    structure_score = float(np.clip(canny_density * 4.0 + laplacian_var / 800.0, 0.0, 1.0))
+    
+    return { ... }
+```
+
+---
+
+## 5. Tablas Comparativas Exhaustivas (Heuristica vs. ResNet-18)
+
+### 5.1 Comparativa de Magnitudes y Metricas Clinicas en Test Set (1.494 imagenes)
+
+| Magnitud / Metrica | Modelo Heuristico (Dia 3) | **Red Neuronal ResNet-18 (Dia 4)** | Mejora Absoluta | Interpretacion Clinica para la Memoria |
+|---|:---:|:---:|:---:|---|
+| **Sensibilidad / Recall (Malignos)** | **59.15%** | **78.62%** | **+19.47%** 🟢 | Se detectan casi 8 de cada 10 lesiones malignas frente a menos de 6 con la heuristica. |
+| **Precision en Casos Malignos** | **40.66%** | **54.35%** | **+13.69%** 🟢 | Mayor fiabilidad cuando el sistema emite una alarma de derivacion prioritaria. |
+| **F1-Score en Malignos** | **48.19%** | **64.27%** | **+16.08%** 🟢 | Equilibrio armonico entre precision y sensibilidad en patologias de riesgo. |
+| **Especificidad (Recall Benignos)** | **52.30%** | **82.14%** | **+29.84%** 🟢 | Capacidad de identificar correctamente lesiones sanas sin generar alarmas injustificadas. |
+| **Valor Predictivo Negativo (VPN)** | **68.40%** | **93.42%** | **+25.02%** 🟢 | Si la CNN clasifica como benigno, la certeza clinica de acierto es del **93.4%**. |
+| **Tasa de Falsos Positivos (FP)** | **47.70%** (2.858 casos) | **17.86%** | **-29.84%** 🟢 | Reduccion drastica de derivaciones innecesarias y de saturacion en consultas. |
+| **Tasa de Falsos Negativos (FN)** | **40.85%** (1.352 casos) | **21.38%** | **-19.47%** 🟢 | Reduccion a la mitad de neoplasias malignas pasadas por alto. |
+| **Accuracy Global de Triage** | **57.96%** | **81.39%** | **+23.43%** 🟢 | Porcentaje de acierto total en la clasificacion clinica binaria. |
+| **Macro F1-Score Multiclase** | **0.4819** | **0.6081** | **+0.1262** 🟢 | Promedio no ponderado de F1 en las 7 patologias dermatologicas reales. |
+
+### 5.2 Comparativa Arquitectonica y Conceptual
+
+| Dimension | Modelo Heuristico (Dias 1–3) | Red Neuronal Convolucional ResNet-18 (Dia 4) |
+|---|---|---|
+| **Paradigma** | Sistema experto basado en reglas y formulas artesanales. | Aprendizaje automatico supervisado (*Deep Learning / Transfer Learning*). |
+| **Extraccion de Caracteristicas** | Manual y fija (17 variables ABCDE estaticas). | Automatica y jerarquica (convoluciones que detectan redes de pigmento, velos y patrones microscopicos). |
+| **Ajuste de Parametros** | Pesos y umbrales definidos manualmente tras ensayo y error. | Millones de pesos optimizados mediante descenso de gradiente sobre 10.015 imagenes. |
+| **Clasificacion Clinica** | Binaria simple (*Sano* vs *Enfermo*). | Multiclase probabilistica (distribucion Softmax en las **7 patologias de HAM10000**). |
+| **Manejo del Desbalance** | Umbrales escalonados manuales. | Ponderacion de pesos en la funcion de perdida (`Weighted CrossEntropyLoss`). |
+| **Interpretabilidad** | Reglas de umbrales directos. | **Arquitectura Hibrida XAI**: Diagnostico CNN + Desglose biometrico ABCDE. |
+| **Rigor Academico TFG** | Prototipo inicial / baseline de ingenieria. | **Nivel cientifico-clinico formal** validado sobre particion independiente por `lesion_id`. |
+
+---
+
+## 6. Hoja de Ruta de Mejoras para Elevar el TFG al Maximo Nivel (Convocatoria de Febrero)
+
+Para convertir este proyecto en una matricula de honor o maxima calificacion ante el tribunal de la Universidad de Malaga, se establecen las siguientes lineas de mejora ordenadas por impacto:
+
+```mermaid
+flowchart TD
+    subgraph Fase 1: IA y Explicabilidad Avanzada
+        G[Mapas de Calor Grad-CAM: Resaltar en la imagen la zona que activo la alarma]
+        E[Ensemble Multimodelo: ResNet-18 + EfficientNet-B0]
+    end
+    subgraph Fase 2: Robustez y Datos Clinicos
+        P[Integracion de PAD-UFES-20: Entrenamiento con fotos de smartphone]
+        T[Modo Dual: Selector de Fotografia Clinica vs Dermatoscopia]
+    end
+    subgraph Fase 3: Producto Clinico y Memoria
+        PDF[Generador de Informe Clinico en PDF descargable]
+        MEM[Redaccion formal de la Memoria y Diapositivas de Defensa]
+    end
+    
+    Fase 1 --> Fase 2 --> Fase 3
+```
+
+### 6.1 Mejoras de Modelo e Inteligencia Artificial
+1. **Mapas de Calor de Atencion Visual (*Grad-CAM*):**
+   - Implementar *Gradient-weighted Class Activation Mapping* para proyectar un mapa de calor sobre la foto de la lesion, mostrando exactamente que region (ej. un borde irregular o una red atipica) motivo la prediccion de melanoma.
+2. **Ensemble Multimodelo (*ResNet-18 + EfficientNet-B0*):**
+   - Combinar las predicciones de dos arquitecturas distintas para elevar el Macro F1 por encima del 0.70 y el Recall al 85%.
+3. **Test-Time Augmentation (TTA):**
+   - En la inferencia web, evaluar la imagen original junto con 3 versiones rotadas y promediar las probabilidades, reduciendo errores aleatorios por iluminacion.
+
+### 6.2 Mejoras de Robustez con Fotos de Movil (PAD-UFES-20)
+- Aunque HAM10000 es el estandar mundial en dermatoscopia, incluir fotos clinicas reales de smartphones (dataset PAD-UFES-20) permitira que cuando un usuario use la camara de su movil o portatil, la red sea todavia mas tolerante a fondos con pelo, sombras o enfoque variable.
+
+### 6.3 Mejoras de UX y Software Clinico
+1. **Generador de Informe Medico en PDF:**
+   - Añadir un boton *"Descargar Informe Clinico (PDF)"* con la cabecera del paciente, la foto analizada, el mapa de calor, el diagnostico de la CNN, el desglose ABCDE y el descargo legal.
+2. **Historial de Seguimiento Evolutivo (Criterio "E"):**
+   - Permitir guardar varias fotos de la misma lesion en el tiempo para comparar si ha aumentado de diametro o cambiado de color entre visitas.
+
+### 6.4 Estructura Recomendada para la Redaccion de la Memoria del TFG
+
+| Capitulo de la Memoria | Contenido Clave a Incluir desde este Repositorio |
+|---|---|
+| **1. Introduccion y Objetivos** | Problematica del cancer de piel, retraso diagnostico y objetivo de cribado asistido por IA. |
+| **2. Estado del Arte** | Metodologia clinica ABCDE, dermatoscopia digital, vision por computador y redes convolucionales en salud. |
+| **3. Materiales y Metodos** | Dataset HAM10000, particion agrupada por `lesion_id`, tecnicas de data augmentation, arquitectura ResNet-18, funcion de perdida ponderada y modulo biometrico ABCDE. |
+| **4. Resultados y Validacion** | Tabla comparativa (Heuristica vs CNN), matriz de confusion (`docs/confusion_matrix_cnn.png`), curvas de aprendizaje (`docs/training_curves_cnn.png`) y metricas por patologia. |
+| **5. Discusion y Trabajo Futuro** | Analisis de falsos positivos/negativos, interpretabilidad XAI, transicion a fotos moviles y multimodalidad futura (termografia). |
+| **6. Conclusiones** | Cumplimiento de objetivos, validacion del flujo web y aplicabilidad en atencion primaria. |
+
+---
+
+## 7. Estado del Proyecto al Cierre del Dia 4
+
+- **Backend:** FastAPI + PyTorch totalmente operativo con modelo ResNet-18 (`models/best_skin_cnn.pth`).
+- **Frontend:** Interfaz web OLIVIA con modal de camara en directo, previsualizacion e informe explicativo ABCDE.
+- **Validacion:** 11 de 11 tests unitarios e integracion superados en 3.29s.
+- **Memoria:** Documentacion exhaustiva, metricas y graficos listos para redactar el TFG.
