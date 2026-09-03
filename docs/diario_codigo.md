@@ -1530,6 +1530,3 @@ La estrategia de trabajo seguirá siendo iterativa:
 Evaluar → detectar errores → proponer una mejora → implementarla → volver a evaluar.
 De esta manera, las siguientes etapas se decidirán a partir de los resultados obtenidos, evitando introducir modificaciones que no aporten una mejora demostrable al sistema.
 
-=======
-- **Memoria:** Documentacion exhaustiva, metricas y graficos listos para redactar el TFG.
->>>>>>> 0dd04653fb41dd0712b33bf92fca0d1574c50a36
