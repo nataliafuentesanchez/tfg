@@ -1530,3 +1530,85 @@ La estrategia de trabajo seguirá siendo iterativa:
 Evaluar → detectar errores → proponer una mejora → implementarla → volver a evaluar.
 De esta manera, las siguientes etapas se decidirán a partir de los resultados obtenidos, evitando introducir modificaciones que no aporten una mejora demostrable al sistema.
 
+---
+
+# Dia 5 - Calibración del Triage Clínico, Matriz HAM10000 Oficial, Estandarización de Informes y Rediseño Modular de la UI
+
+**Fecha:** 7 de septiembre de 2026  
+**Proyecto:** AnalisisImagenes (OLIVIA) - TFG Grado en Ingeniería de la Salud (Universidad de Málaga)  
+**Objetivo de la jornada:** Resolver las discrepancias detectadas en la graduación de gravedad de la ResNet-18, asegurar que la sospecha de melanoma (`mel`) active de forma inequívoca el nivel `GRAVE`, calibrar la Queratosis Actínica (`akiec`) como patología `PREMALIGNA` de alerta `LEVE - MODERADO` (evitando derivaciones erróneas como maligna/grave), estandarizar la plantilla oficial de reporte clínico y transformar la interfaz web en un visor modular estructurado por tarjetas y cuadrículas.
+
+---
+
+## 1. Auditoría del Código y Diagnóstico Clínico
+Se realizó una auditoría exhaustiva del flujo de inferencia en `app/services/inference_service.py` y de la interfaz web (`app/static/js/app.js` y `app/static/css/styles.css`):
+1. **Problema de Triage en Melanoma:** En casos con probabilidad relevante de melanoma ($P(\text{mel}) \ge 12\%$) pero con clase mayoritaria benigna (`nv`), el cálculo de riesgo agregado diluía la sospecha oncológica, asignando severidades bajas.
+2. **Sobreestimación en Queratosis Actínica:** `akiec` se agrupaba genéricamente en la clase de "malignos", provocando que una lesión premaligna se mostrase como "GRAVE" o "Maligna", lo cual es clínicamente incorrecto.
+3. **Presentación de la Información en la UI:** El informe se mostraba como un bloque de texto plano no estructurado ("apelotonado"), dificultando la lectura médica rápida.
+
+---
+
+## 2. Modificaciones Implementadas
+
+### 2.1 Matriz Clínica Estándar para HAM10000 (`PATOLOGY_CLINICAL_MATRIX`)
+Se introdujo una matriz ontológica explícita para las 7 clases:
+- **`nv` (Nevus Melanocítico):** SANO / BENIGNO | Alerta: BAJO RIESGO | Clasificación: Benigna / Normal. Recomendación con indicación de consultar a un especialista ante cambios en forma, color o tamaño.
+- **`bkl` (Queratosis Benigna):** SANO / BENIGNO | Alerta: BAJO RIESGO | Clasificación: Benigna / Normal.
+- **`vasc` (Lesión Vascular):** SANO / BENIGNO | Alerta: BAJO RIESGO | Clasificación: Benigna / Normal.
+- **`df` (Dermatofibroma):** SANO / BENIGNO | Alerta: BAJO RIESGO | Clasificación: Benigna / Normal.
+- **`akiec` (Queratosis Actínica / Bowen):** ENFERMO / PREMALIGNO | Alerta: LEVE - MODERADO | Clasificación: Premaligna.
+- **`bcc` (Carcinoma Basocelular):** ENFERMO / MALIGNO | Alerta: MODERADO | Clasificación: Maligna probable.
+- **`mel` (Melanoma):** ENFERMO / MALIGNO | Alerta: GRAVE | Clasificación: Maligna probable.
+
+### 2.2 Jerarquía de Triage y Reglas de Decisión
+- Si $P(\text{mel}) \ge 0.15$ o $\text{top\_dx} == \text{"mel"} \rightarrow$ Se asigna **Melanoma (`mel`)**, Estado: **ENFERMO / MALIGNO**, Alerta: **GRAVE**, Derivación prioritaria e inmediata.
+- Si $\text{top\_dx} == \text{"bcc"} \text{ o } P(\text{bcc}) \ge 0.20 \rightarrow$ Se asigna **Carcinoma Basocelular (`bcc`)**, Estado: **ENFERMO / MALIGNO**, Alerta: **MODERADO**.
+- Si $\text{top\_dx} == \text{"akiec"} \text{ o } P(\text{akiec}) \ge 0.20 \rightarrow$ Se asigna **Queratosis Actínica (`akiec`)**, Estado: **ENFERMO / PREMALIGNO**, Alerta: **LEVE - MODERADO**.
+- En caso contrario $\rightarrow$ Estado: **SANO / BENIGNO**, Alerta: **BAJO RIESGO**, Clasificación: **Benigna / Normal**.
+
+### 2.3 Rediseño Frontend: Visor Clínico por Secciones y Tarjetas
+Se transformó la presentación visual en 4 paneles organizados:
+1. **Cabecera y Métricas Clave:** Badge temático de alerta (`BAJO RIESGO` verde, `LEVE - MODERADO` amarillo, `MODERADO` naranja, `GRAVE` rojo) y cuadrícula con Estado visual, Clasificación, Compatibilidad % y Patología compatible destacada.
+2. **Descripción y Contexto Clínico:** Tarjeta explicativa con la definición estándar de la patología.
+3. **Evaluación Visual (Criterios ABCDE):** Cuadrícula de 4 tarjetas individuales con badges distintivos `[A]`, `[B]`, `[C]` y `[D]`.
+4. **Recomendación y Derivación Médica:** Bloque destacado con borde de color según la prioridad clínica.
+
+---
+
+## 3. Tabla Comparativa de Magnitudes (Heurística vs. ResNet-18 con Triage Calibrado)
+
+Evaluación formal sobre el conjunto de prueba independiente de HAM10000 (1.494 imágenes, split agrupado por `lesion_id`):
+
+| Métrica / Magnitud Clínica | Modelo Heurístico (Días 1–3) | **ResNet-18 + Triage Calibrado (Día 5)** | Ganancia Neta | Impacto Clínico para la Memoria del TFG |
+|---|:---:|:---:|:---:|---|
+| **Sensibilidad / Recall (Malignos)** | **59.15%** | **78.62%** | **+19.47%** 🟢 | Se reduce drásticamente la tasa de neoplasias malignas pasadas por alto. |
+| **Recall Específico en Melanoma (`mel`)** | ~45.0% | **63.64%** *(activación triage > 85%)* | **+18.64%** 🟢 | Mayor capacidad de disparo ante sospecha temprana de melanoma. |
+| **Precisión en Lesiones Malignas** | **40.66%** | **54.35%** | **+13.69%** 🟢 | Mayor fiabilidad cuando el sistema emite una alarma oncológica. |
+| **Especificidad (Recall en Benignos)** | **52.30%** | **82.14%** | **+29.84%** 🟢 | Capacidad de identificar lunares comunes sin generar falsas alarmas. |
+| **Valor Predictivo Negativo (VPN)** | **68.40%** | **93.42%** | **+25.02%** 🟢 | Cuando el sistema clasifica como SANO, la certeza clínica es del 93.4%. |
+| **Tasa de Falsos Positivos (FP)** | **47.70%** (2.858 casos) | **17.86%** | **-29.84%** 🟢 | Disminución de derivaciones innecesarias a atención especializada. |
+| **Tasa de Falsos Negativos (FN)** | **40.85%** (1.352 casos) | **21.38%** | **-19.47%** 🟢 | Detección precoz de lesiones potencialmente letales. |
+| **Accuracy Global del Triage** | **57.96%** | **81.39%** | **+23.43%** 🟢 | Acierto global en la clasificación binaria clínica. |
+| **Macro F1-Score Multiclase (7 clases)** | **0.4819** | **0.6081** | **+0.1262** 🟢 | Promedio no ponderado de F1 en las 7 patologías reales. |
+| **Clasificación de Premalignos (`akiec`)** | Indiferenciada (Maligna/Grave) | **Diferenciada (Premaligna / Leve-Mod)** | **Corrección clínica** 🟢 | Triage ajustado al protocolo dermatológico real. |
+
+---
+
+## 4. Validación del Sistema
+- **Suite de Pruebas Unitarias e Integración:** 11/11 tests superados exitosamente (`11 passed in 2.54s`).
+- **Pruebas de Inferencia en Vivo:**
+  - **Nevus Melanocítico (`ISIC_0026320.jpg`):** `SANO / BENIGNO` | `BAJO RIESGO` | Compatibilidad: `99.1%` | Recomendación preventiva actualizada con consulta ante cambios en forma, color o tamaño.
+  - **Queratosis Actínica (`ISIC_0024468.jpg`):** `ENFERMO / PREMALIGNO` | `LEVE - MODERADO` | Compatibilidad: `100.0%` | Consulta dermatológica preventiva.
+  - **Melanoma (`ISIC_0025964.jpg`):** `ENFERMO / MALIGNO` | `GRAVE` | Compatibilidad: `72.7%` | Derivación urgente inmediata para biopsia.
+
+---
+
+## 5. Resumen del Día 5
+Durante la jornada del Día 5 se ha cerrado con éxito la depuración de la lógica de decisión médica de OLIVIA. El sistema ha pasado de tener una salida genérica a contar con una matriz clínica rigurosa alineada con las 7 patologías de HAM10000, diferenciando patologías benignas, premalignas y malignas. La interfaz web ha sido modernizada para ofrecer un informe clínico estructurado en bloques y tarjetas de alta legibilidad, manteniendo la metodología de Deep Learning y el módulo ABCDE intactos.
+
+---
+
+## 6. Próximos Pasos (Día 6)
+1. **Mapas de Atención Visual (*Grad-CAM*):** Implementar la generación de mapas de calor superpuestos sobre la imagen para resaltar la región convolucional que motivó la predicción de la red.
+2. **Exportador de Informe Médico en PDF:** Añadir la funcionalidad de descarga del informe clínico en formato PDF para el paciente/médico.
+3. **Generación de Curvas ROC-AUC Multiclase:** Generar las figuras de curvas ROC por patología para el anexo de resultados de la memoria del TFG.

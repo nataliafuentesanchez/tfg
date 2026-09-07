@@ -20,8 +20,8 @@ def test_severity_mapping() -> None:
     assert _severity_from_score(0.10) == "ninguno"
     assert _severity_from_score(0.25) == "bajo"
     assert _severity_from_score(0.50) == "medio"
-    assert _severity_from_score(0.85) == "peligro"
-    assert _severity_from_score(0.30, is_melanoma=True) == "peligro"
+    assert _severity_from_score(0.85) == "grave"
+    assert _severity_from_score(0.30, is_melanoma=True) == "grave"
 
 
 def test_urgent_threshold_is_conservative() -> None:
@@ -35,7 +35,9 @@ def test_analysis_includes_user_report() -> None:
 
     result = analyze_image(encoded.tobytes(), filename="demo.jpg")
     assert result.user_report
-    assert "Resultado principal" in result.user_report
+    assert "RESULTADO DEL ANÁLISIS DE LA RED NEURONAL" in result.user_report
+    assert "EVALUACIÓN VISUAL (Criterios ABCDE)" in result.user_report
+    assert "RECOMENDACIÓN Y DERIVACIÓN" in result.user_report
 
 
 def test_suspicious_lesion_scores_higher_than_safe_background() -> None:
@@ -51,8 +53,11 @@ def test_suspicious_lesion_scores_higher_than_safe_background() -> None:
         mel_result = analyze_image(mel_encoded, filename="melanoma.jpg")
         assert mel_result.risk_score > safe_result.risk_score
         assert mel_result.primary_label == "enfermo"
+        assert mel_result.severity in {"medio", "grave"}
     else:
         assert safe_result.primary_label == "sano"
+        assert safe_result.severity in {"ninguno", "bajo"}
+
 
 
 def test_common_nevus_is_not_flagged_as_suspicious() -> None:
@@ -96,3 +101,4 @@ def test_real_common_nevus_image_is_not_marked_as_suspicious() -> None:
 
     assert result.primary_label == "sano"
     assert result.severity in {"ninguno", "bajo"}
+

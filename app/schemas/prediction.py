@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 class AnalysisResponse(BaseModel):
     filename: str = Field(..., description="Nombre del archivo procesado")
     primary_label: str = Field(..., description="sano o enfermo")
-    severity: str = Field(..., description="ninguno, bajo, medio o peligro")
+    severity: str = Field(..., description="ninguno, bajo, medio o grave")
     benign_malignant: str = Field(..., description="benigno_probable o maligno_probable")
     risk_score: float = Field(..., ge=0.0, le=1.0)
     referral: bool = Field(..., description="Si requiere derivacion al dermatologo")
@@ -22,5 +22,5 @@ class AnalysisResponse(BaseModel):
     disclaimer: str = Field(..., description="Aviso de no diagnostico")
     abcde_analysis: Optional[Dict[str, Any]] = Field(
         default=None, 
-        description="Desglose de criterios clinicos ABCDE (Asimetria, Borde, Color, Diametro, Estructura)"
+        description="Desglose de criterios∏ clinicos ABCDE (Asimetria, Borde, Color, Diametro, Estructura)"
     )

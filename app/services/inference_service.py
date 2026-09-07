@@ -30,16 +30,95 @@ _cnn_model = None
 _cnn_device = None
 _cnn_classes_info = None
 
-DIAGNOSIS_LABELS = {
-    "nv": "Nevus Melanocítico (Lunar común benigno)",
-    "mel": "Melanoma (Lesión maligna sospechosa)",
-    "bkl": "Queratosis Benigna (Lesión seborreica/solar)",
-    "bcc": "Carcinoma Basocelular (Neoplasia maligna)",
-    "akiec": "Queratosis Actínica / Enf. Bowen (Lesión premaligna)",
-    "vasc": "Lesión Vascular (Angioma o similar, benigno)",
-    "df": "Dermatofibroma (Nódulo cutáneo benigno)",
+# Matriz clinica estandar para las 7 patologias del dataset HAM10000
+PATOLOGY_CLINICAL_MATRIX = {
+    "nv": {
+        "name": "Nevus Melanocítico (Lunar común)",
+        "state": "SANO / BENIGNO",
+        "alert": "BAJO RIESGO",
+        "severity_internal": "bajo",
+        "primary_internal": "sano",
+        "classification": "Benigna / Normal",
+        "benign_malignant_internal": "benigno_probable",
+        "referral_internal": False,
+        "description": "Lesión benigna común formada por la acumulación de melanocitos (lunar habitual). No representa riesgo para la salud en su estado actual.",
+        "recommendation": "No se observan signos visuales de alarma. Se recomiendan revisiones de rutina o consultar a un especialista si nota cambios en la forma, color o tamaño."
+    },
+    "bkl": {
+        "name": "Queratosis Benigna (Seborreica / Solar)",
+        "state": "SANO / BENIGNO",
+        "alert": "BAJO RIESGO",
+        "severity_internal": "bajo",
+        "primary_internal": "sano",
+        "classification": "Benigna / Normal",
+        "benign_malignant_internal": "benigno_probable",
+        "referral_internal": False,
+        "description": "Crecimiento no canceroso común en la piel (como queratosis seborreica o lentigos). No evoluciona a cáncer de piel.",
+        "recommendation": "Lesión benigna sin signo de malignidad. Consultar al dermatólogo en caso de molestias o cambios."
+    },
+    "vasc": {
+        "name": "Lesión Vascular (Angioma / Hemangioma)",
+        "state": "SANO / BENIGNO",
+        "alert": "BAJO RIESGO",
+        "severity_internal": "bajo",
+        "primary_internal": "sano",
+        "classification": "Benigna / Normal",
+        "benign_malignant_internal": "benigno_probable",
+        "referral_internal": False,
+        "description": "Alteración benigna de los vasos sanguíneos de la piel (como hemangiomas o angiomas). Sin riesgo de malignidad.",
+        "recommendation": "Lesión benigna estable. Seguimiento de rutina."
+    },
+    "df": {
+        "name": "Dermatofibroma (Nódulo cutáneo benigno)",
+        "state": "SANO / BENIGNO",
+        "alert": "BAJO RIESGO",
+        "severity_internal": "bajo",
+        "primary_internal": "sano",
+        "classification": "Benigna / Normal",
+        "benign_malignant_internal": "benigno_probable",
+        "referral_internal": False,
+        "description": "Nódulo cutáneo benigno asintomático, común en extremidades. Sin riesgo de malignidad.",
+        "recommendation": "Condición benigna. No requiere intervención inmediata salvo cambios visibles."
+    },
+    "akiec": {
+        "name": "Queratosis Actínica / Enf. Bowen",
+        "state": "ENFERMO / PREMALIGNO",
+        "alert": "LEVE - MODERADO",
+        "severity_internal": "medio",
+        "primary_internal": "enfermo",
+        "classification": "Premaligna",
+        "benign_malignant_internal": "maligno_probable",
+        "referral_internal": True,
+        "description": "Lesiones precancerosas causadas por daño solar acumulado que pueden evolucionar a carcinoma escamocelular si no se tratan adecuadamente.",
+        "recommendation": "Consulta dermatológica recomendada para valoración y tratamiento preventivo de la lesión premaligna antes de que pueda evolucionar."
+    },
+    "bcc": {
+        "name": "Carcinoma Basocelular",
+        "state": "ENFERMO / MALIGNO",
+        "alert": "MODERADO",
+        "severity_internal": "medio",
+        "primary_internal": "enfermo",
+        "classification": "Maligna probable",
+        "benign_malignant_internal": "maligno_probable",
+        "referral_internal": True,
+        "description": "Tipo de cáncer de piel de crecimiento lento local. Raramente se propaga a otros órganos, pero requiere evaluación y tratamiento médico oportuno.",
+        "recommendation": "Se recomienda solicitar cita con el dermatólogo para valoración presencial y planificación de tratamiento."
+    },
+    "mel": {
+        "name": "Melanoma",
+        "state": "ENFERMO / MALIGNO",
+        "alert": "GRAVE",
+        "severity_internal": "grave",
+        "primary_internal": "enfermo",
+        "classification": "Maligna probable",
+        "benign_malignant_internal": "maligno_probable",
+        "referral_internal": True,
+        "description": "Lesión con sospecha de melanoma, el tipo de cáncer de piel más agresivo. Requiere atención prioritaria para confirmación mediante biopsia.",
+        "recommendation": "Se recomienda programar una consulta dermatológica urgente para una evaluación presencial prioritaria."
+    },
 }
 
+DIAGNOSIS_LABELS = {k: v["name"] for k, v in PATOLOGY_CLINICAL_MATRIX.items()}
 MALIGNANT_CLASSES = {"mel", "bcc", "akiec"}
 URGENT_REFERRAL_THRESHOLD = 0.40
 
@@ -110,7 +189,6 @@ def _extract_abcde_features(image: np.ndarray) -> Dict[str, Any]:
     resized = cv2.resize(image, (224, 224), interpolation=cv2.INTER_AREA)
     rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-    hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
 
     # Segmentacion robusta hibrida (Otsu para pigmento oscuro + distancia de color para rojas)
     _, otsu_mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
@@ -186,36 +264,45 @@ def _extract_abcde_features(image: np.ndarray) -> Dict[str, Any]:
     }
 
 
-def _human_primary_label(label: str) -> str:
-    return "Sano" if label == "sano" else "Enfermo"
+
+def _severity_from_score(score: float, is_melanoma: bool = False) -> str:
+    """Calcula el nivel de gravedad clinico (ninguno, bajo, medio, grave)."""
+    if is_melanoma or score >= 0.70:
+        return "grave"
+    if score >= 0.40:
+        return "medio"
+    if score >= 0.18:
+        return "bajo"
+    return "ninguno"
 
 
-def _human_benign_malignant(label: str) -> str:
-    return "Benigno probable" if label == "benigno_probable" else "Maligno probable"
-
-
-def _build_user_report(
-    primary_label: str,
-    severity: str,
-    benign_malignant: str,
-    risk_score: float,
-    likely_cause: str,
-    recommendation: str,
-    abcde: Dict[str, Any]
+def _format_structured_report(
+    state: str,
+    alert: str,
+    classification: str,
+    compatibility_pct: float,
+    patology_name: str,
+    description: str,
+    abcde: Dict[str, Any],
+    recommendation: str
 ) -> str:
-    risk_percent = round(risk_score * 100, 1)
+    """Genera el informe con la plantilla estructurada oficial de OLIVIA."""
     return (
-        f"Resultado principal: {_human_primary_label(primary_label)}. "
-        f"Nivel de gravedad estimado: {severity.upper()}. "
-        f"Clasificacion de lesion: {_human_benign_malignant(benign_malignant)}. "
-        f"Riesgo de malignidad estimado: {risk_percent}%. "
-        f"Patologia mas compatible: {likely_cause}. "
-        f"Evaluacion ABCDE: "
-        f"[A: {abcde['asymmetry_desc']}; "
-        f"B: {abcde['border_desc']}; "
-        f"C: {abcde['color_desc']}; "
-        f"D: {abcde['diameter_desc']}]. "
-        f"Recomendacion clinica: {recommendation}"
+        "RESULTADO DEL ANÁLISIS DE LA RED NEURONAL\n\n"
+        f"• Estado visual: {state}\n"
+        f"• Nivel de alerta: {alert}\n"
+        f"• Clasificación de la lesión: {classification}\n"
+        f"• Compatibilidad estimada: {round(compatibility_pct, 1)}%\n"
+        f"• Patología más compatible: {patology_name}\n\n"
+        "DESCRIPCIÓN Y CONTEXTO\n"
+        f"{description}\n\n"
+        "EVALUACIÓN VISUAL (Criterios ABCDE)\n"
+        f"• Asimetría (A): {abcde['asymmetry_desc']}\n"
+        f"• Bordes (B): {abcde['border_desc']}\n"
+        f"• Color (C): {abcde['color_desc']}\n"
+        f"• Diámetro (D): {abcde['diameter_desc']}\n\n"
+        "RECOMENDACIÓN Y DERIVACIÓN\n"
+        f"{recommendation}"
     )
 
 
@@ -238,10 +325,7 @@ def _predict_with_cnn(content: bytes) -> tuple[float, str, dict[str, float], str
     }
 
     prob_dict = {dx_idx_to_name[i]: float(prob) for i, prob in enumerate(probabilities)}
-    
-    # Riesgo de patologias malignas/sospechosas (MEL + BCC + AKIEC)
     malignant_risk = prob_dict["mel"] + prob_dict["bcc"] + prob_dict["akiec"]
-    
     top_dx = max(prob_dict, key=prob_dict.get)
     top_label_human = DIAGNOSIS_LABELS.get(top_dx, top_dx)
     
@@ -262,68 +346,68 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
             bcc_prob = probs.get("bcc", 0.0)
             akiec_prob = probs.get("akiec", 0.0)
 
-            # Marcadores de sospecha oncologica
+            # Criterios morfologicos atipicos
             abcde_is_atypical = (
                 abcde_features["asymmetry_score"] >= 0.28
                 or abcde_features["border_score"] >= 0.25
                 or abcde_features["color_score"] >= 0.25
             )
 
-            # Si el modelo predice melanoma o maligno, o si el riesgo de malignidad supera el 18%,
-            # o si hay sospecha morfologica ABCDE combinada con probabilidad residual de melanoma (> 8%):
-            is_malignant_alert = (
-                top_dx in MALIGNANT_CLASSES
-                or malignant_risk >= 0.18
-                or mel_prob >= 0.08
-                or (abcde_is_atypical and malignant_risk >= 0.12)
-            )
-
-            if is_malignant_alert:
-                primary_label = "enfermo"
-                benign_malignant = "maligno_probable"
-                severity = "peligro"
-                referral = True
-                
-                # Riesgo clinico calibrado para alerta oncologica
-                effective_risk = max(0.78, min(0.98, malignant_risk * 3.5))
-
-                if top_dx == "mel" or mel_prob >= 0.10:
-                    likely_cause = "Melanoma (Neoplasia Maligna Sospechosa - Alta Prioridad)"
-                elif top_dx == "bcc" or bcc_prob >= 0.10:
-                    likely_cause = "Carcinoma Basocelular (Neoplasia Maligna)"
-                elif top_dx == "akiec" or akiec_prob >= 0.10:
-                    likely_cause = "Queratosis Actínica / Enf. Bowen (Lesión Premaligna)"
-                else:
-                    likely_cause = "Lesión Pigmentada Atípica con Criterios de Riesgo Maligno"
-
-                recommendation = "Derivación prioritaria e inmediata al dermatólogo para biopsia y evaluación clínica urgente."
+            # Determinación de patología de referencia y triage clínico
+            # Regla de Triage Clinico:
+            # 1. Alerta por Melanoma: sospecha individual mel_prob >= 0.15 o top_dx == "mel" -> "mel" (GRAVE)
+            # 2. Alerta por Carcinoma Basocelular: top_dx == "bcc" o bcc_prob >= 0.20 -> "bcc" (MODERADO)
+            # 3. Alerta por Queratosis Actinica (Premaligna): top_dx == "akiec" o akiec_prob >= 0.20 -> "akiec" (LEVE - MODERADO)
+            # 4. Otras patologías según predicción ganadora o agregada
+            if top_dx == "mel" or mel_prob >= 0.15:
+                detected_dx = "mel"
+            elif top_dx == "bcc" or bcc_prob >= 0.20:
+                detected_dx = "bcc"
+            elif top_dx == "akiec" or akiec_prob >= 0.20:
+                detected_dx = "akiec"
+            elif abcde_is_atypical and malignant_risk >= 0.15:
+                detected_dx = "akiec" if akiec_prob >= bcc_prob else "bcc"
             else:
-                primary_label = "sano"
-                benign_malignant = "benigno_probable"
-                severity = "ninguno" if malignant_risk < 0.08 else "bajo"
-                referral = False
-                effective_risk = min(0.15, malignant_risk)
-                likely_cause = f"{top_label} (Patrón Benigno Frecuente)"
-                recommendation = "No se aprecian signos de malignidad inmediata; mantener autoexploración periódica."
+                detected_dx = top_dx
+
+            info = PATOLOGY_CLINICAL_MATRIX[detected_dx]
+            
+            # Cálculo de compatibilidad porcentual
+            compat_pct = probs.get(detected_dx, 0.0) * 100.0
+            if detected_dx in MALIGNANT_CLASSES:
+                compat_pct = max(compat_pct, malignant_risk * 100.0)
+
+            # Risk score calibrado numérico [0.0 - 1.0]
+            if detected_dx == "mel":
+                effective_risk = max(0.75, min(0.99, mel_prob * 2.0 + malignant_risk))
+            elif detected_dx == "bcc":
+                effective_risk = max(0.40, min(0.68, bcc_prob * 1.5 + malignant_risk * 0.5))
+            elif detected_dx == "akiec":
+                effective_risk = max(0.25, min(0.48, akiec_prob * 1.3 + malignant_risk * 0.4))
+            else:
+                effective_risk = min(0.12, malignant_risk)
+
+            user_report_text = _format_structured_report(
+                state=info["state"],
+                alert=info["alert"],
+                classification=info["classification"],
+                compatibility_pct=compat_pct,
+                patology_name=info["name"],
+                description=info["description"],
+                abcde=abcde_features,
+                recommendation=info["recommendation"]
+            )
 
             return AnalysisResponse(
                 filename=filename or "imagen_subida",
-                primary_label=primary_label,
-                severity=severity,
-                benign_malignant=benign_malignant,
+                primary_label=info["primary_internal"],
+                severity=info["severity_internal"],
+                benign_malignant=info["benign_malignant_internal"],
                 risk_score=round(float(effective_risk), 4),
-                referral=referral,
-                likely_cause=likely_cause,
-                recommendation=recommendation,
-                user_report=_build_user_report(
-                    primary_label=primary_label,
-                    severity=severity,
-                    benign_malignant=benign_malignant,
-                    risk_score=float(effective_risk),
-                    likely_cause=likely_cause,
-                    recommendation=recommendation,
-                    abcde=abcde_features,
-                ),
+                referral=info["referral_internal"],
+                likely_cause=info["name"],
+                recommendation=info["recommendation"],
+                user_report=user_report_text,
                 disclaimer="Herramienta de cribado y apoyo a la decisión clínica por IA. No sustituye el diagnóstico anatomopatológico.",
                 abcde_analysis=abcde_features
             )
@@ -336,31 +420,36 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
     contrast = float(np.std(gray) / 128.0)
     risk_score = float(np.clip(contrast * 0.5, 0.0, 1.0))
     
-    primary_label = "enfermo" if risk_score >= 0.35 else "sano"
-    severity = "peligro" if risk_score >= 0.35 else "ninguno"
-    benign_malignant = "maligno_probable" if risk_score >= 0.35 else "benigno_probable"
-    referral = risk_score >= 0.35
-    likely_cause = "Lesión evaluada mediante análisis de contingencia"
-    recommendation = "Revisión dermatológica recomendada." if referral else "Seguimiento preventivo."
+    if risk_score >= 0.55:
+        dx_fb = "mel"
+    elif risk_score >= 0.35:
+        dx_fb = "akiec"
+    else:
+        dx_fb = "nv"
+
+    info_fb = PATOLOGY_CLINICAL_MATRIX[dx_fb]
+    user_report_text = _format_structured_report(
+        state=info_fb["state"],
+        alert=info_fb["alert"],
+        classification=info_fb["classification"],
+        compatibility_pct=risk_score * 100.0,
+        patology_name=info_fb["name"],
+        description=info_fb["description"],
+        abcde=abcde_features,
+        recommendation=info_fb["recommendation"]
+    )
 
     return AnalysisResponse(
         filename=filename or "imagen_subida",
-        primary_label=primary_label,
-        severity=severity,
-        benign_malignant=benign_malignant,
+        primary_label=info_fb["primary_internal"],
+        severity=info_fb["severity_internal"],
+        benign_malignant=info_fb["benign_malignant_internal"],
         risk_score=round(risk_score, 4),
-        referral=referral,
-        likely_cause=likely_cause,
-        recommendation=recommendation,
-        user_report=_build_user_report(
-            primary_label=primary_label,
-            severity=severity,
-            benign_malignant=benign_malignant,
-            risk_score=risk_score,
-            likely_cause=likely_cause,
-            recommendation=recommendation,
-            abcde=abcde_features,
-        ),
+        referral=info_fb["referral_internal"],
+        likely_cause=info_fb["name"],
+        recommendation=info_fb["recommendation"],
+        user_report=user_report_text,
         disclaimer="Herramienta de cribado y apoyo a la decisión clínica por IA. No sustituye el diagnóstico anatomopatológico.",
         abcde_analysis=abcde_features
     )
+
