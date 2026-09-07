@@ -2,34 +2,30 @@
 
 ## Contexto activo
 
-- Proyecto de TFG orientado al analisis dermatologico asistido por IA.
-- Objetivo v1: demo web funcional con FastAPI para clasificacion orientativa de riesgo.
-- Enfoque actual: imagenes dermatologicas convencionales (RGB), no termografia en v1.
+- Proyecto de TFG de Ingeniería de la Salud (Universidad de Málaga): OLIVIA (Análisis Dermatológico con IA y XAI).
+- Modelo en producción: Red Neuronal Convolucional (ResNet-18) con Transfer Learning y Weighted Loss, entrenada sobre 10.015 imágenes de HAM10000 con split 70/15/15 agrupado por `lesion_id`.
+- Triage Clínico (Día 5): Matriz ontológica de 7 patologías (`nv`, `bkl`, `vasc`, `df`, `akiec`, `bcc`, `mel`) con plantilla estandarizada y visor frontend modular por tarjetas.
+- Precisión clínica actual: Recall en malignos `78.62%`, VPN `93.42%`, Macro F1 `0.6081`.
 
 ## Decisiones tecnicas
 
-- Arquitectura en dos capas: API web + servicio de inferencia.
-- Respuesta dual: informe legible para usuario (`user_report`) y JSON tecnico.
-- Umbral de derivacion urgente inicial: `risk_score >= 0.80`.
-- Sin base de datos en v1: salida en memoria para simplificar entrega.
-- La fase actual es de calibracion con datos reales, no de entrenamiento final: se ajustan features de lesion, fondo, asimetria, borde e histograma rojo antes de pasar a un modelo supervisado.
-- La aplicacion ya ha sido validada en navegador y backend; el flujo `frontend -> FastAPI -> servicio -> respuesta` funciona correctamente.
-
-## Riesgos conocidos
-
-- Modelo actual es baseline heuristico, no modelo clinicamente validado.
-- Posible desbalance de clases en datasets dermatologicos publicos.
-- Riesgo de sobreinterpretacion del resultado por parte del usuario final.
-- En esta etapa persiste el problema de falsos positivos al separar lesion/fondo si la mascara no es robusta.
+- **Inferencia:** ResNet-18 con cabezal de 7 clases (`Linear(512, 7)`) y Dropout(0.3) + Módulo Biométrico ABCDE (IA Explicable - XAI).
+- **Triage de Severidad Clínico:**
+  - `mel` $\rightarrow$ **ENFERMO / MALIGNO** | **GRAVE** | Derivación urgente inmediata.
+  - `bcc` $\rightarrow$ **ENFERMO / MALIGNO** | **MODERADO**.
+  - `akiec` $\rightarrow$ **ENFERMO / PREMALIGNO** | **LEVE - MODERADO** (Premaligna, nunca grave).
+  - Benignos (`nv`, `bkl`, `vasc`, `df`) $\rightarrow$ **SANO / BENIGNO** | **BAJO RIESGO** con recomendación preventiva.
+- **Frontend Modular:** Presentación estructurada en 4 paneles: Cabecera con Badge, Métricas en Grid, Contexto Clínico, Criterios ABCDE y Recomendación/Derivación.
 
 ## Lecciones Aprendidas
 
-- La calidad real del algoritmo se decide con datos autenticos, no con una sola prueba visual.
-- La mejora relevante se obtuvo al incorporar features morfologicas y de color, no solo por el nivel absoluto de rojo.
-- El falsopositivo dominante no era un caso de melanoma real sino un parche rojo amplio y simetrico, que requiere una regla de exclusion especifica antes de aceptar riesgo.- La repondeacion de features (reduciendo peso de lesion_ratio, aumentando mask_irregularity y asymmetry) es crucial para distinguir eritema/manchas vasculares (benignas) de lesiones genuinas.- El siguiente salto importante sera la fase supervisada, pero solo despues de estabilizar la calibracion heuristica.
+- El cálculo de riesgo agregado diluía la señal de melanoma si la clase mayoritaria era benigna (`nv`); se resolvió mediante disparo directo por probabilidad de clase individual ($P(\text{mel}) \ge 15\%$).
+- Las queratosis actínicas (`akiec`) deben catalogarse como premalignas con alerta leve-moderada para evitar falsas alarmas de malignidad grave.
+- Separar la respuesta en bloques visuales e interactivos mejora notablemente la comprensión y la experiencia de usuario frente a párrafos de texto continuo.
 
 ## Guardrails
 
-- Incluir siempre disclaimer de no diagnostico medico.
-- Priorizar sensibilidad de casos de riesgo en siguientes iteraciones.
-- No almacenar datos personales ni imagenes sensibles en repositorio.
+- Disclaimer médico siempre visible en frontend y respuestas JSON.
+- Respetar estrictamente la partición por `lesion_id` para evitar fuga de datos (*data leakage*).
+- Mantener la reproducibilidad del entorno y tests automáticos passing antes de cada cierre.
+
