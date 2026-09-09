@@ -3,7 +3,7 @@
 ## En curso
 
 - [x] Fase 3 - Construccion
-  - [x] API FastAPI (`/`, `/health`, `/analyze`)
+  - [x] API FastAPI (`/`, `/health`, `/analyze`, `/download-report-pdf`)
   - [x] Motor baseline de analisis dermatologico
   - [x] Informe legible para usuario + JSON tecnico
   - [x] Interfaz visual para demo (CSS/JS en carpetas separadas)
@@ -15,11 +15,16 @@
   - [x] Integración de matriz clínica para las 7 patologías de HAM10000
   - [x] Rediseño frontend estructurado por secciones, métricas clave, contexto, ABCDE y derivación
   - [x] Suite completa de tests unitarios e integración validada (11/11 pasando)
+- [x] Fase 6 - Flujo Interactivo de 2 Pasos (Esfera Landing + Chat Olivia) y Exportación PDF
+  - [x] Landing interactiva con esfera luminosa animada (Paso 1)
+  - [x] Chat conversacional con bienvenida automática y análisis en vivo (Paso 2)
+  - [x] Soporte dual: captura directa por cámara web y subida de archivos
+  - [x] Generador y exportador de informe clínico en PDF formal descargable con ReportLab
+  - [x] Suite de tests completa validada (12/12 pasando)
 
 ## Pendiente
 
-- [ ] Fase 6: Mapas de atención visual (Grad-CAM) para explicabilidad convolucional
-- [ ] Generador y exportador de informe clínico en PDF descargable
+- [ ] Mapas de atención visual (Grad-CAM) para explicabilidad convolucional
 - [ ] Generar curvas ROC-AUC multiclase para incluir en el anexo de la memoria
 - [ ] Definir fase 2 con termografia (si hay datos suficientes)
 - [ ] Publicar push remoto en GitHub (falta autenticacion local)
@@ -54,11 +59,11 @@
 - [x] Endpoint `/health` validado con respuesta `{"status":"ok"}`
 - [x] Red Neuronal Convolucional (ResNet-18) entrenada, guardada e integrada
 - [x] Triage clínico depurado, plantilla estandarizada y UI modular por tarjetas
-- [x] Pruebas completas ejecutadas: `11 passed in 2.54s`
+- [x] Flujo de 2 pasos interactivo idéntico al diseño de referencia (Landing con Esfera + Chat con Botones y Descarga PDF)
+- [x] Pruebas completas ejecutadas: `12 passed in 2.07s`
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-09-07 (Día 5 completado)
-- **Estado exacto:** La aplicación cuenta con inferencia ResNet-18 calibrada con la matriz clínica de 7 patologías de HAM10000. Los informes web se presentan modularizados en 4 secciones visuales (Métricas, Contexto, ABCDE y Recomendación/Derivación).
-- **Próximo paso exacto (Día 6):** Implementar mapas de atención visual (*Grad-CAM*) para que el usuario pueda visualizar exactamente la región de la lesión que activó la sospecha de la red neuronal.
-
+- **Fecha:** 2026-09-09 (Día 6 completado)
+- **Estado exacto:** La aplicación cuenta con el flujo visual de 2 pasos completamente integrado (Paso 1: Landing con Esfera, Paso 2: Conversación interactiva con Olivia, análisis en tiempo real por ResNet-18, criterios ABCDE y botón de descarga directa de informe clínico en PDF). Servidor FastAPI activo en puerto 8000 con todos los tests pasando (12/12).
+- **Próximo paso exacto:** Implementar mapas de calor *Grad-CAM* como capa de interpretabilidad visual convolucional directamente sobre la imagen en la conversación y en el PDF.

@@ -1608,7 +1608,277 @@ Durante la jornada del Día 5 se ha cerrado con éxito la depuración de la lóg
 
 ---
 
-## 6. Próximos Pasos (Día 6)
-1. **Mapas de Atención Visual (*Grad-CAM*):** Implementar la generación de mapas de calor superpuestos sobre la imagen para resaltar la región convolucional que motivó la predicción de la red.
-2. **Exportador de Informe Médico en PDF:** Añadir la funcionalidad de descarga del informe clínico en formato PDF para el paciente/médico.
-3. **Generación de Curvas ROC-AUC Multiclase:** Generar las figuras de curvas ROC por patología para el anexo de resultados de la memoria del TFG.
+
+---
+
+# Dia 6 - Implementación del Flujo Interactivo de Dos Pasos, Esfera Animada y Exportación de Informe Clínico en PDF (OLIVIA)
+
+**Fecha:** 9 de septiembre de 2026  
+**Proyecto:** AnalisisImagenes (OLIVIA) - TFG Grado en Ingeniería de la Salud (Universidad de Málaga)  
+**Objetivo de la jornada:** Rediseñar por completo la experiencia de usuario y la estética frontend para alinearse con el flujo interactivo de 2 pasos (Paso 1: Landing interactiva con esfera luminosa animada; Paso 2: Ventana conversacional de OLIVIA con análisis y captura en directo mediante cámara/subida de archivos), e incorporar el servicio de generación y exportación descargable de informes clínicos en formato PDF formal con ReportLab.
+
+---
+
+## 1. Arquitectura del Nuevo Flujo Frontend
+1. **Paso 1 (Landing Interactiva):**
+   - Fondo *deep space dark UI* con desenfoque e iluminación volumétrica.
+   - Esfera visual central reactiva con gradientes multicapa (cian, magenta, violeta, azul) y micro-animaciones continuas de pulso y rotación.
+   - Botón interactivo de inicio *"Presiona la esfera para comenzar tu conversación con Olivia"*.
+   - Transición fluida al Paso 2 al hacer clic en la esfera o el botón.
+2. **Paso 2 (Ventana de Chat y Análisis):**
+   - Cabecera con avatar estilizado de Olivia, nombre `OLIVIA AI` y estado `● En línea`.
+   - Mensaje de bienvenida inicial automático de Olivia con instrucciones claras.
+   - Opciones duales de entrada: captura en directo mediante cámara web (`navigator.mediaDevices.getUserMedia`) y selector de archivos (`📁 Subir`).
+   - Tarjeta de resultado integrada en el chat con borde neón/lila, estado visual, nivel de alerta calibrado, patología más compatible, desglose morfológico ABCDE y recomendación médica.
+   - Botón interactivo para exportar el informe clínico completo en PDF: `📥 ¿Deseas descargar tu informe clínico completo en PDF?`.
+
+---
+
+## 2. Generación de Informes Clínicos en PDF (`app/services/pdf_service.py`)
+Se implementó un servicio de generación de documentos clínicos estandarizados en PDF utilizando `ReportLab`, que incluye:
+- Cabecera institucional con ID de caso y timestamp.
+- Banner destacado con el nivel de alerta calibrado (`BAJO RIESGO`, `MODERADO`, `GRAVE`).
+- Tabla de resultados del modelo (patología diagnosticada por la ResNet-18, compatibilidad % y clasificación).
+- Matriz explicable de criterios ABCDE (Explainable AI - XAI).
+- Bloque de recomendación y derivación dermatológica.
+- Descargo de responsabilidad médico-legal.
+
+---
+
+## 3. Verificación y Resultados de Tests
+- **Suite de Pruebas Unitarias e Integración:** 12/12 tests superados exitosamente (`12 passed in 2.07s`).
+- **Endpoint `/download-report-pdf`:** Validado con cabecera `Content-Disposition: attachment; filename=informe_olivia_*.pdf`.
+- **Servidor Local Activo:** Uvicorn ejecutándose en `http://127.0.0.1:8000/` con respuesta `200 OK`.
+
+---
+
+## 4. Arquitectura Técnica Detallada del Código (Para la Defensa del TFG)
+
+Esta sección explica con rigor técnico y académico cómo está construido el sistema, qué decisiones de diseño se tomaron y por qué, con el objetivo de poder defenderlo ante el tribunal.
+
+### 4.1 Patrón Arquitectónico: Separación de Responsabilidades (Clean Architecture)
+
+El proyecto sigue una arquitectura limpia y desacoplada en 4 capas:
+
+| Capa | Archivos | Función |
+|---|---|---|
+| **Presentación (Frontend)** | `app/static/css/styles.css`, `app/static/js/app.js` | Interfaz *Single Page Application* (SPA) reactiva con dos vistas: Landing con esfera luminosa animada y Chat interactivo con análisis en vivo. |
+| **Controlador y API (Backend)** | `app/main.py`, `app/api/routes.py` | API asíncrona en **FastAPI**. Enruta peticiones, valida tipos con Pydantic y sirve los endpoints `/analyze` y `/download-report-pdf`. |
+| **Servicio de Inferencia e IA** | `app/services/inference_service.py` | Núcleo biomédico: preprocesamiento de imagen, inferencia con **ResNet-18 (PyTorch)**, extracción de características **ABCDE con OpenCV** y motor de triage clínico. |
+| **Generación de Informes** | `app/services/pdf_service.py` | Generador de informes clínicos formalizados en PDF con **ReportLab** para entrega presencial al dermatólogo. |
+
+Esta separación es fundamental porque permite que cada módulo evolucione de forma independiente: si en el futuro se mejora el modelo de IA, no hay que tocar la interfaz ni el generador de PDF.
+
+---
+
+### 4.2 Técnica 1: Deep Learning con ResNet-18 y Transfer Learning
+
+**¿Por qué ResNet-18?**
+
+Las redes neuronales residuales (*Deep Residual Learning for Image Recognition*, He et al., 2016) resuelven el problema del desvanecimiento del gradiente (*vanishing gradient*) que afecta a las redes profundas. Lo hacen mediante **conexiones de salto** (*skip connections*): en lugar de aprender la transformación directa `H(x)`, la red aprende el residuo `F(x) = H(x) - x`, de forma que si la capa no aporta información útil, el gradiente puede propagarse sin degradarse a través del atajo.
+
+```
+  Entrada x
+     │
+     ├──────────────────┐
+     │                  │ (skip connection)
+  [Conv → BN → ReLU]   │
+  [Conv → BN]          │
+     │                  │
+     └──────────► (+) ──┘
+                   │
+                 ReLU
+```
+
+**Transfer Learning sobre HAM10000:**
+- Se parte de los pesos de ResNet-18 preentrenada en ImageNet (1.2M imágenes, 1000 clases).
+- Se sustituye la capa clasificadora final (`fc`) por una nueva adaptada a las **7 clases de HAM10000**:
+  ```python
+  model.fc = nn.Sequential(
+      nn.Dropout(0.3),    # Regularización para evitar sobreajuste
+      nn.Linear(in_features, 7)  # Salida: 7 probabilidades (Softmax)
+  )
+  ```
+- **Preprocesamiento de imagen:** Se aplica `Resize(256)` → `CenterCrop(224)` (evita deformaciones geométricas en la lesión) y normalización con estadísticas de ImageNet:
+  - Media: `[0.485, 0.456, 0.406]`
+  - Desviación estándar: `[0.229, 0.224, 0.225]`
+
+---
+
+### 4.3 Técnica 2: Inteligencia Artificial Explicable (XAI) — Módulo ABCDE con OpenCV
+
+Para que el modelo no sea una "caja negra" (*black-box*), se implementó un módulo de extracción de características morfológicas clínicas basado en los **criterios dermatoscópicos ABCDE**:
+
+**Segmentación de la lesión:**
+Se combina segmentación por umbralización Otsu (detecta pigmento oscuro) con una máscara de distancia cromatica (detecta lesiones rojizas):
+```python
+_, otsu_mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+color_dist = np.sqrt((R - med_R)² + (G - med_G)² + (B - med_B)²)
+lesion_mask = cv2.bitwise_or(otsu_mask, chroma_mask)
+```
+
+**Cálculo de cada criterio:**
+- **A (Asimetría):** Solapamiento de la máscara con su reflejo horizontal y vertical. Mayor solapamiento → mayor simetría → menor sospecha.
+  - `Asimetría = 1.0 - min(Overlap_H, Overlap_V)`
+- **B (Bordes):** Índice de irregularidad perimetral (compacidad):
+  - `Irregularidad = Perímetro² / (4π × Área)` — Un círculo perfecto tiene valor 1.0; cuanto mayor, más irregular.
+- **C (Color):** Desviación estándar de los canales RGB en la región de la lesión, normalizada. Alta varianza → policromatismo → mayor sospecha.
+- **D (Diámetro):** Proporción del área de la lesión respecto al total de la imagen.
+- **E (Estructura/Evolución):** Densidad de contornos detectados por Canny y varianza del Laplaciano como indicadores de complejidad textural interna.
+
+---
+
+### 4.4 Técnica 3: Motor de Triage Clínico y Matriz Ontológica HAM10000
+
+En medicina, el coste de un falso negativo (no detectar un melanoma) es radicalmente superior al coste de un falso positivo (derivar innecesariamente a un paciente benigno). Por ello se implementó una **jerarquía de reglas de prioridad oncológica**:
+
+1. **Regla Melanoma (Prioridad Máxima):** Si `P(mel) ≥ 0.15` o `top_dx == "mel"` → Estado: **ENFERMO / MALIGNO**, Alerta: **GRAVE**, derivación urgente.
+2. **Regla Carcinoma Basocelular:** Si `top_dx == "bcc"` o `P(bcc) ≥ 0.20` → Estado: **ENFERMO / MALIGNO**, Alerta: **MODERADO**.
+3. **Regla Queratosis Actínica (Premaligna):** Si `top_dx == "akiec"` o `P(akiec) ≥ 0.20` → Estado: **ENFERMO / PREMALIGNO**, Alerta: **LEVE - MODERADO**. Esta clase **nunca** se etiqueta como maligna ni benigna, porque es un estado intermedio de daño solar acumulado reversible con tratamiento.
+4. **Resto de patologías benignas (`nv`, `bkl`, `vasc`, `df`)** → Estado: **SANO / BENIGNO**, Alerta: **BAJO RIESGO**.
+
+---
+
+### 4.5 Técnica 4: Frontend SPA Reactivo sin Frameworks Externos
+
+La interfaz es una **Single Page Application** construida en HTML, CSS y JavaScript vanilla, sin frameworks externos (React, Vue, Angular), lo que permite tener un despliegue extremadamente ligero y sin dependencias de compilación.
+
+**Transición entre Paso 1 y Paso 2:**
+El estado de la interfaz se gestiona mediante clases CSS. Solo la vista activa tiene la clase `.active`, que aplica `opacity: 1` y `transform: translateY(0)` con una transición de 350ms:
+```javascript
+function goToChat() {
+  step1Landing.classList.remove("active");  // Ocultar Landing
+  step2Chat.classList.add("active");         // Mostrar Chat
+}
+```
+
+**La Esfera Animada:**
+Se construye con 3 capas CSS superpuestas:
+- `.orb-glow`: Halo difuso animado con `filter: blur(28px)` y `@keyframes orbPulse`.
+- `.orb-core`: Núcleo esférico con sombras volumétricas internas y gradiente base.
+- `.swirl-1`, `.swirl-2`, `.swirl-3`: Gradientes cónicos girando a diferentes velocidades con `mix-blend-mode: screen`, simulando un núcleo de energía en movimiento.
+
+**Captura por Cámara Web:**
+Utiliza la API nativa del navegador `navigator.mediaDevices.getUserMedia()`, transmite el vídeo en tiempo real a una etiqueta `<video>`, y al disparar la foto congela el frame en un `<canvas>` para convertirlo en un blob JPG y enviarlo directamente a la API:
+```javascript
+webcamCanvas.toBlob((blob) => {
+  const capturedFile = new File([blob], "captura_camara.jpg", { type: "image/jpeg" });
+  processSelectedImage(capturedFile);  // → fetch POST /analyze
+}, "image/jpeg", 0.92);
+```
+
+**Comunicación asíncrona con la API:**
+Se usa `fetch()` con `FormData` para enviar la imagen al endpoint `/analyze` sin recargar la página. La respuesta JSON se parsea y se renderiza dinámicamente como una tarjeta de chat mediante `innerHTML`:
+```javascript
+const response = await fetch("/analyze", { method: "POST", body: formData });
+const data = await response.json();
+appendBotResultCard(data);  // Renderiza la tarjeta de resultado en el chat
+```
+
+---
+
+### 4.6 Técnica 5: Generación de Informes Clínicos en PDF con ReportLab
+
+El informe PDF se genera completamente en el servidor Python, en memoria (`BytesIO`), sin necesidad de software externo ni de que el navegador haga nada especial. El endpoint devuelve los bytes con la cabecera `Content-Disposition: attachment`, que hace que el navegador lo descargue automáticamente:
+
+```python
+return Response(
+    content=pdf_bytes,
+    media_type="application/pdf",
+    headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+)
+```
+
+**Estructura del PDF generado:**
+1. Cabecera con nombre del sistema, ID de caso (hash único del nombre del archivo) y fecha/hora exacta.
+2. Banner de alerta en color (verde, naranja o rojo) según la gravedad del triage.
+3. Tabla de resultados de la red neuronal: patología, estado visual, clasificación y compatibilidad %.
+4. Tabla explicable de criterios ABCDE con puntuaciones normalizadas (0.0 – 1.0) para cada criterio.
+5. Bloque de recomendación y derivación clínica.
+6. Aviso médico-legal obligatorio (*disclaimer*): el informe es de orientación y no sustituye el diagnóstico anatomopatológico.
+
+---
+
+## 5. Preguntas Clave para la Defensa del TFG
+
+| Pregunta del Tribunal | Respuesta |
+|---|---|
+| **¿Por qué OLIVIA no emite un diagnóstico definitivo?** | Por razones éticas, regulatorias (MDR - Medical Device Regulation EU 2017/745) y de seguridad del paciente. OLIVIA es un sistema de cribado y soporte a la decisión clínica (CDSS) que orienta y prioriza, pero la confirmación diagnóstica requiere biopsia anatomopatológica realizada por un dermatólogo. |
+| **¿Qué ventaja tiene ResNet-18 sobre un clasificador clásico?** | Las CNNs aprenden automáticamente representaciones jerárquicas de la imagen (bordes, texturas, patrones) directamente desde píxeles, sin necesidad de ingeniería manual de características. ResNet-18 además resuelve el problema del vanishing gradient con sus conexiones residuales, permitiendo mayor profundidad con menor coste computacional. |
+| **¿Cómo se relacionan la CNN y el módulo ABCDE?** | Son complementarios. La ResNet-18 extrae representaciones abstractas complejas mediante 18 capas para clasificar la probabilidad de cada patología. El módulo ABCDE con OpenCV extrae métricas morfológicas clínicas explícitas (asimetría, borde, color, diámetro) para dotar al sistema de interpretabilidad clínica (XAI - Explainable AI), esencial en dispositivos médicos. |
+| **¿Por qué la Queratosis Actínica tiene un triage diferenciado?** | Porque es una lesión premaligna —no maligna— causada por daño solar acumulado que puede evolucionar a carcinoma escamocelular si no se trata. Etiquetarla como "GRAVE" o "Cáncer" sería clínicamente incorrecto e induciría ansiedad innecesaria. Su triage correcto es LEVE-MODERADO con recomendación de consulta preventiva. |
+| **¿Por qué el PDF se genera en el servidor y no en el navegador?** | Para garantizar reproducibilidad, calidad vectorial profesional y que el formato del documento clínico sea estrictamente controlado e idéntico en cualquier dispositivo. La generación en cliente (html2pdf.js) no garantiza consistencia tipográfica ni de maquetación, lo que es inaceptable en documentación médica. |
+
+---
+
+## 6. Corrección y Mejora del Módulo ABCDE — Descripciones Específicas por Imagen
+
+**Problema detectado:** Las descripciones del bloque de Evaluación Visual ABCDE eran genéricas e iguales para cualquier imagen, independientemente de lo que mostrara la lesión. Frases como *"Asimetría leve/moderada"* o *"Bordes irregulares o poco definidos"* aparecían siempre igual sin reflejar el análisis real de la imagen subida.
+
+**Causa raíz:** Las descripciones en `app/services/inference_service.py` tenían únicamente 2-3 niveles de texto fijo con umbrales demasiado amplios, y el frontend mostraba el texto recortado en una cuadrícula de 2 columnas que impedía leer el detalle.
+
+**Solución implementada:**
+
+### 6.1 Nuevas descripciones en `inference_service.py`
+
+Cada criterio ABCDE pasó de 2-3 niveles de texto a **4 niveles de granularidad**, con el **score numérico** incluido y una frase clínica explicativa específica a lo que se encontró en la imagen:
+
+| Criterio | Niveles anteriores | Niveles nuevos |
+|---|---|---|
+| **A (Asimetría)** | 3 (marcada / leve / simétrica) | 4 (marcada / moderada / leve / simétrica) |
+| **B (Bordes)** | 2 (irregulares / regulares) | 4 (muy irregulares / irregulares / ligeramente irregulares / regulares) |
+| **C (Color)** | 2 (heterogéneo / homogéneo) | 4 (policromatismo intenso / heterogeneidad moderada / levemente heterogéneo / homogéneo) |
+| **D (Diámetro)** | 2 (significativo / focal) | 4 (grande / significativo / moderado / pequeño) |
+| **E (Estructura)** | 2 (atípica / uniforme) | 4 (compleja / moderadamente irregular / levemente irregular / uniforme) |
+
+Cada descripción incluye el score calculado entre paréntesis, por ejemplo:
+```
+"Bordes regulares y bien circunscritos (score: 0.09). El perímetro es nítido
+y suave, con transición gradual hacia la piel perilesional; patrón compatible
+con lesión benigna estable."
+```
+
+### 6.2 Rediseño del bloque ABCDE en el chat (`app.js` y `styles.css`)
+
+Se sustituyó la cuadrícula de 2 columnas (que truncaba el texto) por una **lista vertical de filas de ancho completo**, donde cada criterio tiene:
+- Un **badge de letra con color único** (A: violeta, B: cian, C: lila, D: verde, E: rosa).
+- El nombre del criterio en mayúsculas como subtítulo.
+- El texto descriptivo completo en la fila.
+- Se añadió el criterio **E (Estructura)** que antes no se mostraba en el chat.
+
+**Resultado visual tras la corrección** — para una misma imagen de nevus benigno:
+```
+[A] ASIMETRÍA
+    Asimetría leve (score: 0.18). La lesión es mayoritariamente simétrica
+    con una ligera diferencia entre hemicampos. Se recomienda seguimiento.
+
+[B] BORDES
+    Bordes regulares y bien circunscritos (score: 0.09). El perímetro es
+    nítido y suave; patrón compatible con lesión benigna estable.
+
+[C] COLOR
+    Coloración homogénea (score: 0.07). La distribución del pigmento es
+    uniforme; compatible con lesión benigna sin actividad cromática.
+
+[D] DIÁMETRO
+    Diámetro pequeño o focal (score: 0.12). La lesión ocupa un área reducida,
+    por debajo del umbral de referencia de 6 mm.
+
+[E] ESTRUCTURA
+    Estructura interna uniforme (score: 0.11). La textura y distribución
+    interna son homogéneas; compatible con lesión benigna estable.
+```
+
+**Archivos modificados:**
+- `app/services/inference_service.py` — función `_extract_abcde_features()`: líneas de descripción ampliadas a 4 niveles con score integrado.
+- `app/static/js/app.js` — bloque de renderizado ABCDE: cuadrícula 2-col → lista vertical con 5 filas (A-E).
+- `app/static/css/styles.css` — estilos `.abcde-chat-grid` → `.abcde-chat-list`, `.abcde-row`, `.abcde-badge` con colores diferenciados.
+
+**Tests:** 12/12 pasando tras los cambios (`pytest tests/ -v`).
+
+---
+
+## 7. Resumen del Día 6
+
+Durante la jornada del Día 6 se ha completado el rediseño completo de la experiencia de usuario de OLIVIA para alinearse con el diseño de referencia del TFG. El sistema ha pasado de una interfaz estática de subida de archivos a un flujo conversacional dinámico de dos pasos (Landing con esfera animada → Chat interactivo con cámara en directo y análisis en tiempo real). Se ha incorporado el generador de informes clínicos en PDF, se han corregido las descripciones del módulo ABCDE para que sean específicas a cada imagen analizada, y se han completado y superado 12/12 tests automatizados.
+

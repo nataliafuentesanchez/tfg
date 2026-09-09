@@ -243,23 +243,72 @@ def _extract_abcde_features(image: np.ndarray) -> Dict[str, Any]:
     laplacian_var = float(np.var(cv2.Laplacian(gray.astype(np.float32), cv2.CV_32F)))
     structure_complexity = float(np.clip(edge_density * 4.0 + min(1.0, laplacian_var / 600.0), 0.0, 1.0))
 
-    # Descripciones cualitativas
-    a_desc = "Asimetría marcada (alta sospecha)" if asymmetry > 0.30 else ("Asimetría leve/moderada" if asymmetry > 0.15 else "Simétrica (patrón regular)")
-    b_desc = "Bordes irregulares o poco definidos" if border_irregularity > 0.25 else "Bordes regulares y circunscritos"
-    c_desc = "Heterogeneidad cromática (múltiples tonos)" if color_heterogeneity > 0.25 else "Coloración homogénea"
-    d_desc = "Diámetro significativo (> 6mm est.)" if diameter_proxy > 0.35 else "Diámetro focal/pequeño"
-    e_desc = "Estructura interna atípica" if structure_complexity > 0.30 else "Estructura uniforme"
+    # Descripciones cualitativas con 4 niveles de granularidad + score numérico integrado
+    # A - Asimetría
+    a_s = round(asymmetry, 3)
+    if a_s >= 0.40:
+        a_desc = f"Asimetría marcada en ambos ejes (score: {a_s}). La lesión presenta una distribución claramente irregular; los hemicampos horizontal y vertical no se superponen, lo que constituye un signo de alta sospecha dermatoscópica."
+    elif a_s >= 0.25:
+        a_desc = f"Asimetría moderada detectada (score: {a_s}). Existe una diferencia apreciable entre los hemicampos de la lesión, sugerente de crecimiento irregular o distribución pigmentaria no uniforme."
+    elif a_s >= 0.10:
+        a_desc = f"Asimetría leve (score: {a_s}). La lesión es mayoritariamente simétrica con una ligera diferencia entre hemicampos. Se recomienda seguimiento ante cambios."
+    else:
+        a_desc = f"Lesión simétrica (score: {a_s}). Los hemicampos horizontal y vertical presentan alta superposición; patrón morfológico regular sin signos de asimetría significativa."
+
+    # B - Bordes
+    b_s = round(border_irregularity, 3)
+    if b_s >= 0.50:
+        b_desc = f"Bordes muy irregulares y difusos (score: {b_s}). El perímetro de la lesión es notablemente lobulado o estrellado, con transición abrupta hacia la piel sana; hallazgo de alta sospecha."
+    elif b_s >= 0.30:
+        b_desc = f"Bordes irregulares o parcialmente mal definidos (score: {b_s}). Se observan entrantes y salientes perimetrales que sugieren crecimiento asimétrico de la lesión."
+    elif b_s >= 0.15:
+        b_desc = f"Bordes ligeramente irregulares (score: {b_s}). Contorno mayormente circunscrito con alguna zona de transición no del todo nítida; dentro de la variabilidad normal en lesiones benignas."
+    else:
+        b_desc = f"Bordes regulares y bien circunscritos (score: {b_s}). El perímetro es nítido y suave, con transición gradual hacia la piel perilesional; patrón compatible con lesión benigna estable."
+
+    # C - Color
+    c_s = round(color_heterogeneity, 3)
+    if c_s >= 0.50:
+        c_desc = f"Policromatismo intenso (score: {c_s}). La lesión muestra múltiples tonos claramente diferenciados (p. ej. marrón, negro, rojo, azul/gris). La variabilidad cromática es un criterio de alta sospecha dermatoscópica."
+    elif c_s >= 0.30:
+        c_desc = f"Heterogeneidad cromática moderada (score: {c_s}). Se detectan al menos dos tonos diferenciados dentro de la lesión. La distribución irregular del pigmento requiere evaluación especializada."
+    elif c_s >= 0.12:
+        c_desc = f"Coloración levemente heterogénea (score: {c_s}). La lesión presenta un tono predominante con ligeras variaciones de intensidad que pueden ser normales en lesiones benignas."
+    else:
+        c_desc = f"Coloración homogénea (score: {c_s}). La distribución del pigmento es uniforme en toda la lesión, sin tonos contrastantes; compatible con lesión benigna sin signos de actividad cromática."
+
+    # D - Diámetro
+    d_s = round(diameter_proxy, 3)
+    if d_s >= 0.60:
+        d_desc = f"Diámetro estimado grande (score: {d_s}). La lesión ocupa una proporción considerable del área de análisis, superando claramente el umbral de referencia de 6 mm; requiere valoración presencial."
+    elif d_s >= 0.35:
+        d_desc = f"Diámetro estimado significativo, probable > 6 mm (score: {d_s}). La extensión de la lesión supera el umbral de referencia dermatoscópica; recomendable valoración clínica."
+    elif d_s >= 0.15:
+        d_desc = f"Diámetro moderado, próximo al umbral de 6 mm (score: {d_s}). La lesión tiene una extensión media; se sugiere seguimiento fotográfico para detectar cambios en el tiempo."
+    else:
+        d_desc = f"Diámetro pequeño o focal (score: {d_s}). La lesión ocupa un área reducida, por debajo del umbral de referencia de 6 mm; tamaño compatible con lesiones benignas estables."
+
+    # E - Estructura / Textura
+    e_s = round(structure_complexity, 3)
+    if e_s >= 0.50:
+        e_desc = f"Estructura interna compleja y atípica (score: {e_s}). Se detecta alta densidad de contornos internos y varianza de textura elevada; la organización interna es irregular, lo que puede indicar actividad proliferativa."
+    elif e_s >= 0.30:
+        e_desc = f"Estructura interna moderadamente irregular (score: {e_s}). Existe cierta complejidad textural interna que excede el patrón de lesiones benignas homogéneas; recomendable valoración especializada."
+    elif e_s >= 0.12:
+        e_desc = f"Estructura interna levemente irregular (score: {e_s}). La textura muestra alguna variación, dentro de la variabilidad esperada en lesiones benignas con superficie ligeramente rugosa."
+    else:
+        e_desc = f"Estructura interna uniforme (score: {e_s}). La textura y distribución interna de la lesión son homogéneas, sin variaciones abruptas; compatible con lesión benigna estable."
 
     return {
-        "asymmetry_score": round(asymmetry, 3),
+        "asymmetry_score": a_s,
         "asymmetry_desc": a_desc,
-        "border_score": round(border_irregularity, 3),
+        "border_score": b_s,
         "border_desc": b_desc,
-        "color_score": round(color_heterogeneity, 3),
+        "color_score": c_s,
         "color_desc": c_desc,
-        "diameter_score": round(diameter_proxy, 3),
+        "diameter_score": d_s,
         "diameter_desc": d_desc,
-        "structure_score": round(structure_complexity, 3),
+        "structure_score": e_s,
         "structure_desc": e_desc,
     }
 

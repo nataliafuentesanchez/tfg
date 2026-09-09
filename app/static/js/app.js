@@ -5,205 +5,352 @@
 // Built with dbv-specs-ops - https://github.com/davidbuenov/dbv-specs-ops
 // =============================================================================
 
-const inputEl = document.getElementById("img");
-const resultEl = document.getElementById("result");
-const buttonEl = document.getElementById("analyzeButton");
-const uploadBtn = document.getElementById("uploadBtn");
-const analysisTextEl = document.getElementById("analysisText");
-const resultPanelEl = document.getElementById("resultPanel");
-const jsonBoxEl = document.getElementById("jsonBox");
-const previewCard = document.getElementById("previewCard");
-const previewImg = document.getElementById("previewImg");
+// Elementos de la UI
+const step1Landing = document.getElementById("step1Landing");
+const step2Chat = document.getElementById("step2Chat");
+const sphereTrigger = document.getElementById("sphereTrigger");
+const startConversationBtn = document.getElementById("startConversationBtn");
+const backToLandingBtn = document.getElementById("backToLandingBtn");
 
-function setPendingState() {
-  buttonEl.disabled = true;
-  buttonEl.textContent = "Analizando con Red Neuronal...";
-  analysisTextEl.textContent = "Procesando imagen con ResNet-18 y calculando diagnóstico...";
-  resultPanelEl.style.display = "block";
-  jsonBoxEl.style.display = "none";
+const fileInputHidden = document.getElementById("fileInputHidden");
+const uploadActionBtn = document.getElementById("uploadActionBtn");
+const cameraActionBtn = document.getElementById("cameraActionBtn");
+const chatMessagesArea = document.getElementById("chatMessagesArea");
+const dynamicChatEntries = document.getElementById("dynamicChatEntries");
+const typingLoader = document.getElementById("typingLoader");
+
+// Modal de Cámara
+const cameraModal = document.getElementById("cameraModal");
+const closeCameraBtn = document.getElementById("closeCameraBtn");
+const closeCameraBackdrop = document.getElementById("closeCameraBackdrop");
+const webcamVideo = document.getElementById("webcamVideo");
+const webcamCanvas = document.getElementById("webcamCanvas");
+const snapPhotoBtn = document.getElementById("snapPhotoBtn");
+
+let streamWebcam = null;
+let lastAnalysisResult = null;
+
+// ==========================================
+// CONTROL DE NAVEGACIÓN (PASO 1 <-> PASO 2)
+// ==========================================
+function goToChat() {
+  step1Landing.classList.remove("active");
+  step2Chat.classList.add("active");
+  scrollToBottom();
 }
 
-function resetButtonState() {
-  buttonEl.disabled = false;
-  buttonEl.textContent = "Analizar ahora";
+function goToLanding() {
+  step2Chat.classList.remove("active");
+  step1Landing.classList.add("active");
 }
 
-function openFilePicker() {
-  inputEl.click();
+if (sphereTrigger) sphereTrigger.addEventListener("click", goToChat);
+if (startConversationBtn) startConversationBtn.addEventListener("click", goToChat);
+if (backToLandingBtn) backToLandingBtn.addEventListener("click", goToLanding);
+
+// ==========================================
+// MANEJO DE ENTRADA: ARCHIVO O CÁMARA
+// ==========================================
+if (uploadActionBtn) {
+  uploadActionBtn.addEventListener("click", () => {
+    fileInputHidden.click();
+  });
 }
 
-function renderStructuredReport(data) {
+if (fileInputHidden) {
+  fileInputHidden.addEventListener("change", (e) => {
+    if (!e.target.files || !e.target.files.length) return;
+    const file = e.target.files[0];
+    processSelectedImage(file);
+  });
+}
+
+if (cameraActionBtn) {
+  cameraActionBtn.addEventListener("click", async () => {
+    try {
+      cameraModal.style.display = "flex";
+      streamWebcam = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      webcamVideo.srcObject = streamWebcam;
+    } catch (err) {
+      alert("No se pudo acceder a la cámara: " + err.message);
+      closeWebcam();
+    }
+  });
+}
+
+function closeWebcam() {
+  if (streamWebcam) {
+    streamWebcam.getTracks().forEach(track => track.stop());
+    streamWebcam = null;
+  }
+  if (cameraModal) cameraModal.style.display = "none";
+}
+
+if (closeCameraBtn) closeCameraBtn.addEventListener("click", closeWebcam);
+if (closeCameraBackdrop) closeCameraBackdrop.addEventListener("click", closeWebcam);
+
+if (snapPhotoBtn) {
+  snapPhotoBtn.addEventListener("click", () => {
+    if (!webcamVideo.videoWidth) return;
+    webcamCanvas.width = webcamVideo.videoWidth;
+    webcamCanvas.height = webcamVideo.videoHeight;
+    const ctx = webcamCanvas.getContext("2d");
+    ctx.drawImage(webcamVideo, 0, 0, webcamCanvas.width, webcamCanvas.height);
+    
+    webcamCanvas.toBlob((blob) => {
+      closeWebcam();
+      const capturedFile = new File([blob], "captura_camara.jpg", { type: "image/jpeg" });
+      processSelectedImage(capturedFile);
+    }, "image/jpeg", 0.92);
+  });
+}
+
+// ==========================================
+// ENVÍO Y PROCESAMIENTO CON RESNET-18
+// ==========================================
+function scrollToBottom() {
+  setTimeout(() => {
+    if (chatMessagesArea) chatMessagesArea.scrollTop = chatMessagesArea.scrollHeight;
+  }, 50);
+}
+
+function appendUserImageMessage(imageSrc, fileName) {
+  const msgRow = document.createElement("div");
+  msgRow.className = "chat-msg-row user-row";
+  msgRow.innerHTML = `
+    <div class="msg-bubble user-bubble">
+      <p>Foto enviada para análisis: <strong>${fileName}</strong></p>
+      <img src="${imageSrc}" class="user-image-preview" alt="Lesión subida" />
+    </div>
+  `;
+  dynamicChatEntries.appendChild(msgRow);
+  scrollToBottom();
+}
+
+async function processSelectedImage(file) {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    appendUserImageMessage(e.target.result, file.name);
+    
+    // Mostrar loader de Olivia
+    if (typingLoader) typingLoader.style.display = "flex";
+    scrollToBottom();
+    
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/analyze", {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json();
+      if (typingLoader) typingLoader.style.display = "none";
+
+      if (!response.ok) {
+        appendBotErrorMessage("Lo siento, ocurrió un problema al procesar la imagen: " + (data.detail || "Error del servidor"));
+        return;
+      }
+
+      lastAnalysisResult = data;
+      appendBotResultCard(data);
+    } catch (err) {
+      if (typingLoader) typingLoader.style.display = "none";
+      appendBotErrorMessage("Error de conexión con el servidor de análisis dermatológico.");
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function appendBotErrorMessage(text) {
+  const msgRow = document.createElement("div");
+  msgRow.className = "chat-msg-row bot-row";
+  msgRow.innerHTML = `
+    <div class="msg-avatar"><div class="mini-orb"></div></div>
+    <div class="msg-bubble" style="border: 1px solid #f87171; color: #fca5a5;">
+      ${text}
+    </div>
+  `;
+  dynamicChatEntries.appendChild(msgRow);
+  scrollToBottom();
+}
+
+function appendBotResultCard(data) {
   const text = data.user_report || "";
   const abcde = data.abcde_analysis || {};
-  
-  // Determinamos el color temático según el nivel de alerta / gravedad
-  let alertBadgeClass = "badge-low";
-  let alertText = "BAJO RIESGO";
-  let stateText = data.primary_label === "sano" ? "SANO / BENIGNO" : "ENFERMO";
-  let severity = (data.severity || "").toLowerCase();
 
-  if (text.includes("Nivel de alerta: GRAVE") || severity === "grave") {
-    alertBadgeClass = "badge-danger";
-    alertText = "GRAVE";
-  } else if (text.includes("Nivel de alerta: MODERADO")) {
-    alertBadgeClass = "badge-warning";
-    alertText = "MODERADO";
-  } else if (text.includes("Nivel de alerta: LEVE - MODERADO") || severity === "medio") {
-    alertBadgeClass = "badge-moderate";
-    alertText = "LEVE - MODERADO";
+  // Estado visual
+  let stateVisual = data.primary_label === "sano" ? "SANO / BENIGNO" : "ENFERMO / MALIGNO";
+  let stateColorClass = "val-green";
+  if (text.includes("SANO / BENIGNO")) {
+    stateVisual = "SANO / BENIGNO";
+    stateColorClass = "val-green";
+  } else if (text.includes("ENFERMO / PREMALIGNO")) {
+    stateVisual = "ENFERMO / PREMALIGNO";
+    stateColorClass = "val-amber";
+  } else if (text.includes("ENFERMO / MALIGNO")) {
+    stateVisual = "ENFERMO / MALIGNO";
+    stateColorClass = "val-red";
   }
 
-  // Parseo de campos de la plantilla
-  const matchState = text.match(/• Estado visual:\s*(.+)/);
-  if (matchState) stateText = matchState[1].trim();
+  // Nivel de alerta
+  let alertText = "BAJO RIESGO";
+  let alertColorClass = "val-green";
+  if (text.includes("Nivel de alerta: GRAVE")) {
+    alertText = "GRAVE";
+    alertColorClass = "val-red";
+  } else if (text.includes("Nivel de alerta: MODERADO")) {
+    alertText = "MODERADO";
+    alertColorClass = "val-amber";
+  } else if (text.includes("Nivel de alerta: LEVE - MODERADO")) {
+    alertText = "LEVE - MODERADO";
+    alertColorClass = "val-amber";
+  }
 
-  const matchClassification = text.match(/• Clasificación de la lesión:\s*(.+)/);
-  const classificationText = matchClassification ? matchClassification[1].trim() : (data.benign_malignant === "benigno_probable" ? "Benigna / Normal" : "Maligna probable");
+  // Clasificación
+  const matchClass = text.match(/• Clasificación de la lesión:\s*(.+)/);
+  const classification = matchClass ? matchClass[1].trim() : (data.benign_malignant === "benigno_probable" ? "Benigna / Normal" : "Maligna probable");
 
+  // Compatibilidad
   const matchCompat = text.match(/• Compatibilidad estimada:\s*(.+)/);
-  const compatText = matchCompat ? matchCompat[1].trim() : `${Math.round(data.risk_score * 100)}%`;
+  const compatPct = matchCompat ? matchCompat[1].trim() : `${Math.round(data.risk_score * 100)}%`;
 
+  // Patología más compatible
   const matchPatology = text.match(/• Patología más compatible:\s*(.+)/);
-  const patologyText = matchPatology ? matchPatology[1].trim() : data.likely_cause;
+  const patologyName = matchPatology ? matchPatology[1].trim() : data.likely_cause;
 
+  // Descripción y Contexto
   const matchDesc = text.match(/DESCRIPCIÓN Y CONTEXTO\s*\n([\s\S]*?)(?=\n\nEVALUACIÓN VISUAL)/);
-  const descText = matchDesc ? matchDesc[1].trim() : "";
+  const description = matchDesc ? matchDesc[1].trim() : "";
 
+  // Recomendación
   const matchRec = text.match(/RECOMENDACIÓN Y DERIVACIÓN\s*\n([\s\S]*?)$/);
-  const recText = matchRec ? matchRec[1].trim() : data.recommendation;
+  const recommendation = matchRec ? matchRec[1].trim() : data.recommendation;
 
-  const html = `
-    <div class="clinical-report-container">
-      <!-- 1. CABECERA Y RESULTADOS PRINCIPALES -->
-      <div class="report-section-header">
-        <span class="report-main-title">RESULTADO DEL ANÁLISIS DE LA RED NEURONAL</span>
-        <span class="alert-badge ${alertBadgeClass}">${alertText}</span>
+  const msgRow = document.createElement("div");
+  msgRow.className = "chat-msg-row bot-row";
+  
+  msgRow.innerHTML = `
+    <div class="msg-avatar"><div class="mini-orb"></div></div>
+    <div class="result-card-bubble">
+      <div class="result-card-header">RESULTADO DEL ANÁLISIS DE LA RED NEURONAL</div>
+      
+      <div class="result-field-list">
+        <div class="field-item">
+          <span class="field-label">• Estado visual:</span>
+          <span class="field-val ${stateColorClass}">${stateVisual}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">• Nivel de alerta:</span>
+          <span class="field-val ${alertColorClass}">${alertText} (${compatPct})</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">• Clasificación de la lesión:</span>
+          <span class="field-val">${classification}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">• Patología más compatible:</span>
+          <span class="field-val" style="color: #c084fc;">${patologyName}</span>
+        </div>
       </div>
 
-      <div class="report-grid-metrics">
-        <div class="metric-card">
-          <div class="metric-lbl">Estado visual</div>
-          <div class="metric-val ${stateText.includes('SANO') ? 'val-safe' : (stateText.includes('PREMALIGNO') ? 'val-premalign' : 'val-danger')}">${stateText}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-lbl">Clasificación de la lesión</div>
-          <div class="metric-val">${classificationText}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-lbl">Compatibilidad estimada</div>
-          <div class="metric-val metric-pct">${compatText}</div>
-        </div>
-        <div class="metric-card highlight-metric">
-          <div class="metric-lbl">Patología más compatible</div>
-          <div class="metric-val val-patology">${patologyText}</div>
-        </div>
+      ${description ? `
+      <div class="section-block">
+        <div class="section-heading">DESCRIPCIÓN Y CONTEXTO</div>
+        <div class="section-text">${description}</div>
       </div>
+      ` : ''}
 
-      <!-- 2. DESCRIPCIÓN Y CONTEXTO -->
-      <div class="report-block">
-        <div class="block-title">📋 DESCRIPCIÓN Y CONTEXTO</div>
-        <div class="block-body">${descText || 'Descripción visual de la lesión analizada.'}</div>
-      </div>
-
-      <!-- 3. EVALUACIÓN VISUAL (CRITERIOS ABCDE) -->
-      <div class="report-block">
-        <div class="block-title">🔬 EVALUACIÓN VISUAL (Criterios ABCDE)</div>
-        <div class="abcde-grid">
-          <div class="abcde-item">
-            <span class="abcde-letter">A</span>
-            <div class="abcde-info">
-              <strong>Asimetría:</strong>
-              <span>${abcde.asymmetry_desc || 'Evaluación simétrica'}</span>
+      <div class="section-block">
+        <div class="section-heading">EVALUACIÓN VISUAL (Criterios ABCDE)</div>
+        <div class="abcde-chat-list">
+          <div class="abcde-row">
+            <span class="abcde-badge badge-a">A</span>
+            <div class="abcde-row-content">
+              <span class="abcde-row-title">Asimetría</span>
+              <span class="abcde-row-desc">${abcde.asymmetry_desc || 'Sin datos de asimetría'}</span>
             </div>
           </div>
-          <div class="abcde-item">
-            <span class="abcde-letter">B</span>
-            <div class="abcde-info">
-              <strong>Bordes:</strong>
-              <span>${abcde.border_desc || 'Bordes circunscritos'}</span>
+          <div class="abcde-row">
+            <span class="abcde-badge badge-b">B</span>
+            <div class="abcde-row-content">
+              <span class="abcde-row-title">Bordes</span>
+              <span class="abcde-row-desc">${abcde.border_desc || 'Sin datos de bordes'}</span>
             </div>
           </div>
-          <div class="abcde-item">
-            <span class="abcde-letter">C</span>
-            <div class="abcde-info">
-              <strong>Color:</strong>
-              <span>${abcde.color_desc || 'Coloración regular'}</span>
+          <div class="abcde-row">
+            <span class="abcde-badge badge-c">C</span>
+            <div class="abcde-row-content">
+              <span class="abcde-row-title">Color</span>
+              <span class="abcde-row-desc">${abcde.color_desc || 'Sin datos de color'}</span>
             </div>
           </div>
-          <div class="abcde-item">
-            <span class="abcde-letter">D</span>
-            <div class="abcde-info">
-              <strong>Diámetro:</strong>
-              <span>${abcde.diameter_desc || 'Diámetro focal'}</span>
+          <div class="abcde-row">
+            <span class="abcde-badge badge-d">D</span>
+            <div class="abcde-row-content">
+              <span class="abcde-row-title">Diámetro</span>
+              <span class="abcde-row-desc">${abcde.diameter_desc || 'Sin datos de diámetro'}</span>
+            </div>
+          </div>
+          <div class="abcde-row">
+            <span class="abcde-badge badge-e">E</span>
+            <div class="abcde-row-content">
+              <span class="abcde-row-title">Estructura</span>
+              <span class="abcde-row-desc">${abcde.structure_desc || 'Sin datos de estructura'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 4. RECOMENDACIÓN Y DERIVACIÓN -->
-      <div class="report-block recommendation-block ${alertBadgeClass === 'badge-danger' ? 'rec-urgent' : (alertBadgeClass === 'badge-moderate' ? 'rec-warning' : 'rec-routine')}">
-        <div class="block-title">🏥 RECOMENDACIÓN Y DERIVACIÓN</div>
-        <div class="block-body rec-body">${recText || data.recommendation}</div>
+
+      <div class="section-block" style="border-left-color: ${alertColorClass === 'val-red' ? '#f43f5e' : (alertColorClass === 'val-amber' ? '#f59e0b' : '#10b981')};">
+        <div class="section-heading">RECOMENDACIÓN Y DERIVACIÓN</div>
+        <div class="section-text" style="color: #f1f5f9; font-weight: 500;">${recommendation}</div>
       </div>
+
+      <button class="pdf-download-interactive-btn" type="button" onclick="triggerPdfDownload()">
+        <span>📥 ¿Deseas descargar tu informe clínico completo en PDF?</span>
+      </button>
     </div>
   `;
 
-  analysisTextEl.innerHTML = html;
+  dynamicChatEntries.appendChild(msgRow);
+  scrollToBottom();
 }
 
-async function sendImage() {
-  if (!inputEl.files || !inputEl.files.length) {
-    analysisTextEl.textContent = "Por favor, selecciona una imagen primero.";
-    resultPanelEl.style.display = "block";
-    jsonBoxEl.style.display = "none";
+// ==========================================
+// EXPORTACIÓN DE INFORME PDF
+// ==========================================
+async function triggerPdfDownload() {
+  if (!lastAnalysisResult) {
+    alert("No hay datos de análisis disponibles para generar el PDF.");
     return;
   }
 
-  const fileToSend = inputEl.files[0];
-  const fd = new FormData();
-  fd.append("file", fileToSend);
-
-  setPendingState();
   try {
-    const res = await fetch("/analyze", { method: "POST", body: fd });
-    const data = await res.json();
+    const res = await fetch("/download-report-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(lastAnalysisResult)
+    });
 
     if (!res.ok) {
-      analysisTextEl.textContent = "Ha ocurrido un error al procesar la imagen.";
-      resultEl.textContent = JSON.stringify(data, null, 2);
-      jsonBoxEl.style.display = "block";
-      return;
+      throw new Error("Error al generar el archivo PDF en el servidor.");
     }
 
-    renderStructuredReport(data);
-    resultEl.textContent = JSON.stringify(data, null, 2);
-    jsonBoxEl.style.display = "block";
-    resultPanelEl.style.display = "block";
-  } catch (error) {
-    analysisTextEl.textContent = "No se pudo conectar con el servidor.";
-    resultEl.textContent = `Error de red: ${error}`;
-    jsonBoxEl.style.display = "block";
-  } finally {
-    resetButtonState();
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `informe_clinico_olivia_${lastAnalysisResult.filename.split('.')[0] || 'analisis'}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("No se pudo descargar el informe PDF: " + err.message);
   }
 }
-
-
-inputEl.addEventListener("change", () => {
-  if (!inputEl.files.length) return;
-
-  const file = inputEl.files[0];
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    previewImg.src = e.target.result;
-    previewCard.style.display = "flex";
-  };
-  reader.readAsDataURL(file);
-
-  analysisTextEl.textContent = `Imagen '${file.name}' cargada. Haz clic en 'Analizar ahora'.`;
-  resultPanelEl.style.display = "block";
-  jsonBoxEl.style.display = "none";
-});
-
-uploadBtn.addEventListener("click", openFilePicker);
-buttonEl.addEventListener("click", sendImage);
+window.triggerPdfDownload = triggerPdfDownload;
