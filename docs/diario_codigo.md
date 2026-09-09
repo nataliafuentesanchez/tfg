@@ -1799,19 +1799,8 @@ return Response(
 
 ---
 
-## 5. Preguntas Clave para la Defensa del TFG
 
-| Pregunta del Tribunal | Respuesta |
-|---|---|
-| **¿Por qué OLIVIA no emite un diagnóstico definitivo?** | Por razones éticas, regulatorias (MDR - Medical Device Regulation EU 2017/745) y de seguridad del paciente. OLIVIA es un sistema de cribado y soporte a la decisión clínica (CDSS) que orienta y prioriza, pero la confirmación diagnóstica requiere biopsia anatomopatológica realizada por un dermatólogo. |
-| **¿Qué ventaja tiene ResNet-18 sobre un clasificador clásico?** | Las CNNs aprenden automáticamente representaciones jerárquicas de la imagen (bordes, texturas, patrones) directamente desde píxeles, sin necesidad de ingeniería manual de características. ResNet-18 además resuelve el problema del vanishing gradient con sus conexiones residuales, permitiendo mayor profundidad con menor coste computacional. |
-| **¿Cómo se relacionan la CNN y el módulo ABCDE?** | Son complementarios. La ResNet-18 extrae representaciones abstractas complejas mediante 18 capas para clasificar la probabilidad de cada patología. El módulo ABCDE con OpenCV extrae métricas morfológicas clínicas explícitas (asimetría, borde, color, diámetro) para dotar al sistema de interpretabilidad clínica (XAI - Explainable AI), esencial en dispositivos médicos. |
-| **¿Por qué la Queratosis Actínica tiene un triage diferenciado?** | Porque es una lesión premaligna —no maligna— causada por daño solar acumulado que puede evolucionar a carcinoma escamocelular si no se trata. Etiquetarla como "GRAVE" o "Cáncer" sería clínicamente incorrecto e induciría ansiedad innecesaria. Su triage correcto es LEVE-MODERADO con recomendación de consulta preventiva. |
-| **¿Por qué el PDF se genera en el servidor y no en el navegador?** | Para garantizar reproducibilidad, calidad vectorial profesional y que el formato del documento clínico sea estrictamente controlado e idéntico en cualquier dispositivo. La generación en cliente (html2pdf.js) no garantiza consistencia tipográfica ni de maquetación, lo que es inaceptable en documentación médica. |
-
----
-
-## 6. Corrección y Mejora del Módulo ABCDE — Descripciones Específicas por Imagen
+## 5. Corrección y Mejora del Módulo ABCDE — Descripciones Específicas por Imagen
 
 **Problema detectado:** Las descripciones del bloque de Evaluación Visual ABCDE eran genéricas e iguales para cualquier imagen, independientemente de lo que mostrara la lesión. Frases como *"Asimetría leve/moderada"* o *"Bordes irregulares o poco definidos"* aparecían siempre igual sin reflejar el análisis real de la imagen subida.
 
@@ -1819,7 +1808,7 @@ return Response(
 
 **Solución implementada:**
 
-### 6.1 Nuevas descripciones en `inference_service.py`
+### 5.1 Nuevas descripciones en `inference_service.py`
 
 Cada criterio ABCDE pasó de 2-3 niveles de texto a **4 niveles de granularidad**, con el **score numérico** incluido y una frase clínica explicativa específica a lo que se encontró en la imagen:
 
@@ -1838,7 +1827,7 @@ y suave, con transición gradual hacia la piel perilesional; patrón compatible
 con lesión benigna estable."
 ```
 
-### 6.2 Rediseño del bloque ABCDE en el chat (`app.js` y `styles.css`)
+### 5.2 Rediseño del bloque ABCDE en el chat (`app.js` y `styles.css`)
 
 Se sustituyó la cuadrícula de 2 columnas (que truncaba el texto) por una **lista vertical de filas de ancho completo**, donde cada criterio tiene:
 - Un **badge de letra con color único** (A: violeta, B: cian, C: lila, D: verde, E: rosa).
@@ -1878,7 +1867,7 @@ Se sustituyó la cuadrícula de 2 columnas (que truncaba el texto) por una **lis
 
 ---
 
-## 7. Resumen del Día 6
+## 6. Resumen del Día 6
 
 Durante la jornada del Día 6 se ha completado el rediseño completo de la experiencia de usuario de OLIVIA para alinearse con el diseño de referencia del TFG. El sistema ha pasado de una interfaz estática de subida de archivos a un flujo conversacional dinámico de dos pasos (Landing con esfera animada → Chat interactivo con cámara en directo y análisis en tiempo real). Se ha incorporado el generador de informes clínicos en PDF, se han corregido las descripciones del módulo ABCDE para que sean específicas a cada imagen analizada, y se han completado y superado 12/12 tests automatizados.
 
