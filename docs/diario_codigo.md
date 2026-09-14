@@ -1956,7 +1956,15 @@ tests/unit/test_pdf_service.py ..                                        [100%]
 
 ---
 
-### 7.6 Verificación Automatizada (Tests Unitarios e Integración)
+### 7.6 Configuración de Red Local para iPhone/iPad y Actualización de Documentación (`README.md`)
+
+- **Configuración de Red Local:** Se identificó la IP de red local del Mac (`192.168.1.59`) y se verificó la escucha del servidor Uvicorn en `0.0.0.0:8000` para garantizar conectividad fluida desde dispositivos Safari en iPhone y iPad sobre Wi-Fi.
+- **Documentación en README:** Se actualizó la sección *"Aplicación disponible en"* del archivo `README.md` incluyendo las instrucciones y formato de URL para acceso desde escritorio (`http://127.0.0.1:8000/`) y desde dispositivos móviles en la red local (`http://<IP_DE_TU_MAC>:8000/`).
+- **Archivos modificados:** `README.md`.
+
+---
+
+### 7.7 Verificación Automatizada (Tests Unitarios e Integración)
 
 Se extendieron las pruebas en `tests/unit/test_inference_service.py` y `tests/unit/test_pdf_service.py` para validar el retorno de la imagen en Base64 y la generación correcta del PDF con imagen embebida.
 
@@ -1977,9 +1985,10 @@ tests/unit/test_pdf_service.py ..                                        [100%]
 
 ---
 
-### 7.7 Resumen del Día 7
+### 7.8 Resumen del Día 7
 
-Durante el Día 7 se han resuelto de forma integral todas las observaciones del prototipo: el porcentaje de gravedad en diagnósticos de Melanoma se ha recalibrado para reflejar el índice de riesgo clínico real (e.g. 85-99%), el sistema es totalmente funcional en iPad e iPhone gracias al fallback a la cámara nativa de iOS y la barra de entrada activa, los informes PDF descargables incluyen la fotografía analizada del paciente, se ha añadido la funcionalidad de reiniciar la conversación mediante el comando *"quiero abrir un nuevo chat"* o el botón directo `+ Nuevo Chat`, y se ha implementado el extractor de ROI focal `_extract_focal_crop` para aislar manchas o lunares focales en fotos macro evitando falsos positivos por piel de fondo. Toda la suite de 13 pruebas se encuentra pasando al 100%.
+Durante el Día 7 se han resuelto de forma integral todas las observaciones planteadas sobre el prototipo clínico: el porcentaje de gravedad en diagnósticos de Melanoma se ha recalibrado para reflejar el índice de riesgo clínico real (e.g. 85-99%), el sistema es 100% funcional en iPad e iPhone tanto por red local (`http://192.168.1.59:8000`) como con el fallback automático a la cámara nativa de iOS y la entrada táctil de texto, los informes PDF descargables incluyen la fotografía analizada del paciente, se ha añadido la opción de abrir un nuevo chat mediante texto o botón en la cabecera, y se ha implementado la segmentación por ROI focal (`_extract_focal_crop`) que aísla lunares en fotos macro evitando falsos positivos por piel de fondo. La documentación del proyecto en `README.md` ha sido actualizada y toda la suite de 13 pruebas automatizadas está validada al 100%.
+
 
 
 

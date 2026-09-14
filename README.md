@@ -34,7 +34,8 @@ start.cmd
 
 Aplicacion disponible en:
 
-http://127.0.0.1:8000/
+- **Escritorio / Local (Mac/PC):** `http://127.0.0.1:8000/` o `http://localhost:8000/`
+- **Dispositivos móviles (iPhone / iPad en la misma red Wi-Fi):** `http://<IP_DE_TU_MAC>:8000/` (ejemplo de tu red: `http://192.168.1.59:8000/`)
 
 ## Parar la aplicacion
 

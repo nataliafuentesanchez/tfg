@@ -69,6 +69,6 @@
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-09-14
-- **Estado exacto:** Fase 7 completada. El porcentaje de gravedad en Melanoma refleja el riesgo clínico calibrado (e.g. 85-99%), OLIVIA funciona en iPad e iPhone mediante fallback nativo a cámara y cuadro de texto activo, los PDF incluyen la fotografía enviada por el usuario, y el chat se puede reiniciar escribiendo "quiero abrir un nuevo chat" o pulsando el botón "+ Nuevo Chat". Todos los tests pasando (13/13).
+- **Fecha:** 2026-09-14 (Día 7 completado)
+- **Estado exacto:** Fase 7 completada. El porcentaje de gravedad en Melanoma refleja el riesgo clínico calibrado (e.g. 85-99%), OLIVIA es 100% funcional en iPad e iPhone tanto por red local (`http://192.168.1.59:8000`) como por cámara nativa, los informes PDF incluyen la foto analizada, se puede iniciar un nuevo chat por texto o botón, y se ha añadido la segmentación por ROI focal (`_extract_focal_crop`) que aísla manchas/lunares en fotos macro. Documentación en `README.md` actualizada y 13/13 tests pasando.
 - **Próximo paso exacto:** Implementar mapas de calor *Grad-CAM* como capa de interpretabilidad visual convolucional sobre la imagen.
