@@ -22,5 +22,9 @@ class AnalysisResponse(BaseModel):
     disclaimer: str = Field(..., description="Aviso de no diagnostico")
     abcde_analysis: Optional[Dict[str, Any]] = Field(
         default=None, 
-        description="Desglose de criterios∏ clinicos ABCDE (Asimetria, Borde, Color, Diametro, Estructura)"
+        description="Desglose de criterios clinicos ABCDE (Asimetria, Borde, Color, Diametro, Estructura)"
+    )
+    image_base64: Optional[str] = Field(
+        default=None,
+        description="Imagen analizada codificada en Base64 para inclusion en PDF"
     )

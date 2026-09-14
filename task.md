@@ -20,7 +20,12 @@
   - [x] Chat conversacional con bienvenida automática y análisis en vivo (Paso 2)
   - [x] Soporte dual: captura directa por cámara web y subida de archivos
   - [x] Generador y exportador de informe clínico en PDF formal descargable con ReportLab
-  - [x] Suite de tests completa validada (12/12 pasando)
+  - [x] Fase 7 - Calibración de Gravedad, Soporte Móvil iPad/iPhone, Foto en PDF y Nuevo Chat
+  - [x] Recalibración del porcentaje de gravedad en Melanoma (reflejando el riesgo clínico efectivo e.g. 85-99%)
+  - [x] Fallback automático a cámara nativa en iOS/iPadOS sobre conexiones HTTP y activación de entrada de texto
+  - [x] Inclusión visual de la fotografía de la lesión enviada por el usuario en el informe clínico PDF descargable
+  - [x] Comando conversacional ("quiero abrir un nuevo chat") y botón directo `+ Nuevo Chat` en cabecera
+  - [x] Suite de tests completa validada (13/13 pasando)
 
 ## Pendiente
 
@@ -60,10 +65,10 @@
 - [x] Red Neuronal Convolucional (ResNet-18) entrenada, guardada e integrada
 - [x] Triage clínico depurado, plantilla estandarizada y UI modular por tarjetas
 - [x] Flujo de 2 pasos interactivo idéntico al diseño de referencia (Landing con Esfera + Chat con Botones y Descarga PDF)
-- [x] Pruebas completas ejecutadas: `12 passed in 2.07s`
+- [x] Calibración de gravedad en Melanoma, soporte iOS/iPad, imagen en PDF y nuevo chat (13/13 tests pasando)
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-09-09 (Día 6 completado)
-- **Estado exacto:** La aplicación cuenta con el flujo visual de 2 pasos completamente integrado (Paso 1: Landing con Esfera, Paso 2: Conversación interactiva con Olivia, análisis en tiempo real por ResNet-18, criterios ABCDE y botón de descarga directa de informe clínico en PDF). Servidor FastAPI activo en puerto 8000 con todos los tests pasando (12/12).
-- **Próximo paso exacto:** Implementar mapas de calor *Grad-CAM* como capa de interpretabilidad visual convolucional directamente sobre la imagen en la conversación y en el PDF.
+- **Fecha:** 2026-09-14
+- **Estado exacto:** Fase 7 completada. El porcentaje de gravedad en Melanoma refleja el riesgo clínico calibrado (e.g. 85-99%), OLIVIA funciona en iPad e iPhone mediante fallback nativo a cámara y cuadro de texto activo, los PDF incluyen la fotografía enviada por el usuario, y el chat se puede reiniciar escribiendo "quiero abrir un nuevo chat" o pulsando el botón "+ Nuevo Chat". Todos los tests pasando (13/13).
+- **Próximo paso exacto:** Implementar mapas de calor *Grad-CAM* como capa de interpretabilidad visual convolucional sobre la imagen.

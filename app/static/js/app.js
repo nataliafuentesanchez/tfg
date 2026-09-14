@@ -19,6 +19,11 @@ const chatMessagesArea = document.getElementById("chatMessagesArea");
 const dynamicChatEntries = document.getElementById("dynamicChatEntries");
 const typingLoader = document.getElementById("typingLoader");
 
+const newChatBtn = document.getElementById("newChatBtn");
+const chatForm = document.getElementById("chatForm");
+const chatTextInput = document.getElementById("chatTextInput");
+const sendTextMsgBtn = document.getElementById("sendTextMsgBtn");
+
 // Modal de Cámara
 const cameraModal = document.getElementById("cameraModal");
 const closeCameraBtn = document.getElementById("closeCameraBtn");
@@ -49,6 +54,91 @@ if (startConversationBtn) startConversationBtn.addEventListener("click", goToCha
 if (backToLandingBtn) backToLandingBtn.addEventListener("click", goToLanding);
 
 // ==========================================
+// FUNCIÓN PARA CREAR / REINICIAR NUEVO CHAT
+// ==========================================
+function resetChatSession() {
+  if (dynamicChatEntries) dynamicChatEntries.innerHTML = "";
+  lastAnalysisResult = null;
+  
+  const msgRow = document.createElement("div");
+  msgRow.className = "chat-msg-row bot-row";
+  msgRow.innerHTML = `
+    <div class="msg-avatar"><div class="mini-orb"></div></div>
+    <div class="msg-bubble welcome-bubble">
+      <p>✨ <strong>¡Nuevo chat iniciado!</strong> Sesión reiniciada correctamente.</p>
+      <p style="margin-top: 6px;">¿Cómo deseas realizar el análisis de tu piel?</p>
+      <ul class="guide-options-list" style="margin-top: 6px;">
+        <li>• Pulsa <strong>📷 Cámara</strong> para tomar una foto en directo.</li>
+        <li>• Pulsa <strong>📁 Subir</strong> para seleccionar una imagen de tu dispositivo.</li>
+      </ul>
+    </div>
+  `;
+  dynamicChatEntries.appendChild(msgRow);
+  scrollToBottom();
+}
+
+if (newChatBtn) {
+  newChatBtn.addEventListener("click", resetChatSession);
+}
+
+// ==========================================
+// MANEJO DE ENTRADA DE TEXTO Y COMANDOS CHAT
+// ==========================================
+function handleUserTextMessage(text) {
+  if (!text) return;
+  
+  // Renderizar mensaje del usuario
+  const userRow = document.createElement("div");
+  userRow.className = "chat-msg-row user-row";
+  userRow.innerHTML = `
+    <div class="msg-bubble user-bubble">
+      <p>${text}</p>
+    </div>
+  `;
+  dynamicChatEntries.appendChild(userRow);
+  scrollToBottom();
+
+  const lower = text.toLowerCase();
+  if (
+    lower.includes("nuevo chat") || 
+    lower.includes("abrir un nuevo chat") || 
+    lower.includes("reiniciar") || 
+    lower.includes("limpiar") ||
+    lower.includes("otro chat") ||
+    lower.includes("reset")
+  ) {
+    setTimeout(() => {
+      resetChatSession();
+    }, 400);
+  } else {
+    setTimeout(() => {
+      const botRow = document.createElement("div");
+      botRow.className = "chat-msg-row bot-row";
+      botRow.innerHTML = `
+        <div class="msg-avatar"><div class="mini-orb"></div></div>
+        <div class="msg-bubble">
+          <p>¡Hola! Soy <strong>OLIVIA</strong>. Si deseas reiniciar la conversación, escribe <strong>"quiero abrir un nuevo chat"</strong> o pulsa en <strong>+ Nuevo Chat</strong> arriba.</p>
+          <p style="margin-top: 6px;">Para analizar una lesión en tu piel, utiliza los botones de abajo: <strong>📷 Cámara</strong> para captura directa o <strong>📁 Subir</strong> para seleccionar una imagen.</p>
+        </div>
+      `;
+      dynamicChatEntries.appendChild(botRow);
+      scrollToBottom();
+    }, 300);
+  }
+}
+
+if (chatForm) {
+  chatForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const val = chatTextInput.value.trim();
+    if (val) {
+      chatTextInput.value = "";
+      handleUserTextMessage(val);
+    }
+  });
+}
+
+// ==========================================
 // MANEJO DE ENTRADA: ARCHIVO O CÁMARA
 // ==========================================
 if (uploadActionBtn) {
@@ -67,6 +157,12 @@ if (fileInputHidden) {
 
 if (cameraActionBtn) {
   cameraActionBtn.addEventListener("click", async () => {
+    // Fallback automático para contextos sin WebRTC o HTTP en iOS Safari / Móviles
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      fileInputHidden.click();
+      return;
+    }
+
     try {
       cameraModal.style.display = "flex";
       streamWebcam = await navigator.mediaDevices.getUserMedia({
@@ -74,8 +170,9 @@ if (cameraActionBtn) {
       });
       webcamVideo.srcObject = streamWebcam;
     } catch (err) {
-      alert("No se pudo acceder a la cámara: " + err.message);
+      // Fallback suave al selector nativo del dispositivo (soporta camara en iPad/iPhone)
       closeWebcam();
+      fileInputHidden.click();
     }
   });
 }
@@ -132,7 +229,8 @@ function appendUserImageMessage(imageSrc, fileName) {
 async function processSelectedImage(file) {
   const reader = new FileReader();
   reader.onload = async (e) => {
-    appendUserImageMessage(e.target.result, file.name);
+    const base64DataUrl = e.target.result;
+    appendUserImageMessage(base64DataUrl, file.name);
     
     // Mostrar loader de Olivia
     if (typingLoader) typingLoader.style.display = "flex";
@@ -154,6 +252,9 @@ async function processSelectedImage(file) {
         return;
       }
 
+      if (!data.image_base64) {
+        data.image_base64 = base64DataUrl;
+      }
       lastAnalysisResult = data;
       appendBotResultCard(data);
     } catch (err) {

@@ -35,6 +35,8 @@ def test_analysis_includes_user_report() -> None:
 
     result = analyze_image(encoded.tobytes(), filename="demo.jpg")
     assert result.user_report
+    assert result.image_base64 is not None
+    assert result.image_base64.startswith("data:image/jpeg;base64,")
     assert "RESULTADO DEL ANÁLISIS DE LA RED NEURONAL" in result.user_report
     assert "EVALUACIÓN VISUAL (Criterios ABCDE)" in result.user_report
     assert "RECOMENDACIÓN Y DERIVACIÓN" in result.user_report

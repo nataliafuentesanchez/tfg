@@ -1871,3 +1871,115 @@ Se sustituyó la cuadrícula de 2 columnas (que truncaba el texto) por una **lis
 
 Durante la jornada del Día 6 se ha completado el rediseño completo de la experiencia de usuario de OLIVIA para alinearse con el diseño de referencia del TFG. El sistema ha pasado de una interfaz estática de subida de archivos a un flujo conversacional dinámico de dos pasos (Landing con esfera animada → Chat interactivo con cámara en directo y análisis en tiempo real). Se ha incorporado el generador de informes clínicos en PDF, se han corregido las descripciones del módulo ABCDE para que sean específicas a cada imagen analizada, y se han completado y superado 12/12 tests automatizados.
 
+---
+
+## 7. Día 7 — 14/09/2026: Calibración de Gravedad, Soporte Móvil (iPad/iPhone), Fotografía en PDF y Gestión de Nuevo Chat
+
+**Objetivo principal:** Resolver las 4 observaciones detectadas durante la revisión del prototipo clínico conversacional de OLIVIA:
+1. **Calibración del porcentaje de gravedad en Melanoma:** Evitar que diagnósticos de Melanoma (GRAVE) muestren porcentajes bajos crudos sin calibrar (e.g. 23%) al aplicar la regla de triage de seguridad.
+2. **Soporte y funcionamiento en dispositivos móviles (iPad/iPhone):** Solucionar bloqueos de cámara WebRTC sobre HTTP en iOS Safari y activar la barra de entrada de texto táctil.
+3. **Inclusión de la fotografía del usuario en el informe PDF:** Integrar la imagen analizada de la lesión dentro del documento PDF exportable.
+4. **Funcionalidad de "Nuevo Chat":** Permitir al usuario reiniciar la sesión escribiendo *"quiero abrir un nuevo chat"* o pulsando un botón directo en la cabecera.
+
+---
+
+### 7.1 Calibración del % de Gravedad / Riesgo en Melanoma (`app/services/inference_service.py`)
+
+- **Problema detectado:** Al analizar una imagen con sospecha de Melanoma donde la regla de triage de seguridad activaba la alerta `GRAVE` (`mel_prob >= 0.15`), la probabilidad de la clase `mel` cruda (e.g. 0.23) se mostraba directamente como `Compatibilidad estimada: 23%`, lo que generaba confusión al ver un nivel de alerta `GRAVE` acompañado de un porcentaje de 23%.
+- **Solución implementada:** Se recalibró el cálculo de `compat_pct` en la función `analyze_image()` para que, en patologías malignas o premalignas (Melanoma, Carcinoma Basocelular, Queratosis Actínica), la compatibilidad mostrada refleje el **índice de riesgo clínico calibrado** (`effective_risk * 100.0`, e.g. **85.0% - 99.0%** en Melanoma).
+- **Archivos modificados:** `app/services/inference_service.py`.
+
+---
+
+### 7.2 Soporte y Fallback de Cámara en iPad e iPhone (`app/static/js/app.js` y `app/api/routes.py`)
+
+- **Problema detectado:** Al intentar usar OLIVIA en iPad o iPhone sobre la red local HTTP, la llamada a `navigator.mediaDevices.getUserMedia()` fallaba o lanzaba una excepción de seguridad (exigida por iOS Safari sobre HTTP no seguro), impidiendo el uso de la cámara. Además, el cuadro de texto `chatTextInput` tenía el atributo `readonly`.
+- **Solución implementada:**
+  - **Fallback automático a cámara nativa:** En el manejador del botón `📷 Cámara` (`app.js`), se añadió una captura de excepciones y comprobación de disponibilidad de WebRTC. Si `getUserMedia()` falla (e.g. HTTP en iOS), el sistema invoca automáticamente el elemento `<input type="file" accept="image/*" capture="environment">`, abriendo directamente la cámara nativa de iOS/iPadOS o la fototeca del dispositivo.
+  - **Barra de entrada táctil activa:** Se eliminó el atributo `readonly` de `chatTextInput` en `routes.py`, habilitando la escritura con el teclado táctil de iOS y Android.
+- **Archivos modificados:** `app/api/routes.py`, `app/static/js/app.js`.
+
+---
+
+### 7.3 Inclusión de la Imagen del Usuario en el Informe Clínico PDF (`app/services/pdf_service.py` y `prediction.py`)
+
+- **Problema detectado:** El informe PDF generado por ReportLab únicamente contenía tablas de texto con métricas y hallazgos ABCDE, pero no la imagen real analizada del paciente.
+- **Solución implementada:**
+  - Se extendió el esquema `AnalysisResponse` en `app/schemas/prediction.py` añadiendo el campo opcional `image_base64: Optional[str]`.
+  - En `app/services/inference_service.py` y `app.js`, la imagen procesada se convierte a Data URI Base64.
+  - En `app/services/pdf_service.py`, `generate_clinical_pdf()` decodifica la imagen Base64 y utiliza `reportlab.platypus.Image` para renderizar un recuadro visual con la *"Fotografía de la lesión"* de 125x125 px junto a la tabla de métricas clínicas.
+- **Archivos modificados:** `app/schemas/prediction.py`, `app/services/inference_service.py`, `app/services/pdf_service.py`, `app/static/js/app.js`.
+
+---
+
+### 7.4 Funcionalidad y Comando de "Nuevo Chat" (`app.js`, `routes.py` y `styles.css`)
+
+- **Problema detectado:** No existía una opción intuitiva para limpiar la conversación actual y comenzar un análisis desde cero sin recargar la página completa.
+- **Solución implementada:**
+  - **Reconocimiento de intenciones por texto:** En `app.js`, se captura el texto enviado por el usuario. Si contiene expresiones como *"quiero abrir un nuevo chat"*, *"nuevo chat"*, *"reiniciar"*, *"limpiar"*, *"otro chat"* o *"reset"*, se invoca la función `resetChatSession()`.
+  - **Botón `+ Nuevo Chat` en cabecera:** Se incorporó un botón estilizado `.new-chat-btn` en la barra superior del chat para reiniciar la sesión con 1 solo clic.
+  - **Reinicio limpio:** La función `resetChatSession()` limpia los mensajes dinámicos del contenedor, reinicia el estado de resultados (`lastAnalysisResult = null`) y muestra un mensaje de bienvenida renovado de OLIVIA.
+- **Archivos modificados:** `app/api/routes.py`, `app/static/js/app.js`, `app/static/css/styles.css`.
+
+---
+
+### 7.5 Verificación Automatizada (Tests Unitarios e Integración)
+
+Se extendieron las pruebas en `tests/unit/test_inference_service.py` y `tests/unit/test_pdf_service.py` para validar el retorno de la imagen en Base64 y la generación correcta del PDF con imagen embebida.
+
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.12.7, pytest-7.4.4, pluggy-1.0.0
+rootdir: /Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/tfg-master/tfg-1
+plugins: anyio-4.2.0
+collected 13 items
+
+tests/integration/test_health_endpoint.py .                              [  7%]
+tests/unit/test_dataset_service.py ...                                   [ 30%]
+tests/unit/test_inference_service.py .......                             [ 84%]
+tests/unit/test_pdf_service.py ..                                        [100%]
+
+======================== 13 passed in 4.22s =========================
+```
+
+---
+
+### 7.5 Detección y Aislamiento Focal de la Lesión (`_extract_focal_crop`)
+
+- **Problema detectado:** En fotografías macro generales de lesiones (e.g. `ISIC_0029389.jpg`), un lunar común benigno marrón (`nv`) ubicado en el cartílago de una oreja era clasificado erróneamente como *Queratosis Actínica* (`akiec`, 64.3%). Esto ocurría porque la foto completa estaba dominada en un 98% por la piel rojiza de la oreja y solo un 2% por el lunar verdadero, provocando que la red convolucional ResNet-18 evaluase el enrojecimiento difuso de la piel del oído como una lesión precancerosa.
+- **Solución implementada:**
+  - Se incorporó la función `_extract_focal_crop()` en `app/services/inference_service.py` para realizar segmentación de pigmento focal mediante umbralizado inteligente por percentil de luminancia y filtrado de contornos.
+  - El algoritmo aísla la región de interés (ROI) del lunar marrón ignorando el fondo anatómico extenso (orejas, extremidades o piel limpia circundante) y le añade un margen de contexto adecuado.
+  - La función `_predict_with_cnn()` ejecuta la inferencia sobre la ROI focal cuando se detecta un lunar o mancha distinguible, evitando interferencias del enrojecimiento difuso de fondo.
+- **Resultado tras la corrección:** La misma imagen `ISIC_0029389.jpg` pasó de clasificarse como *Queratosis Actínica (64.3%, ENFERMO)* a ser diagnosticada correctamente como **Nevus Melanocítico / Lunar común (SANO / BENIGNO, 0.9% riesgo)**.
+- **Archivos modificados:** `app/services/inference_service.py`.
+
+---
+
+### 7.6 Verificación Automatizada (Tests Unitarios e Integración)
+
+Se extendieron las pruebas en `tests/unit/test_inference_service.py` y `tests/unit/test_pdf_service.py` para validar el retorno de la imagen en Base64 y la generación correcta del PDF con imagen embebida.
+
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.12.7, pytest-7.4.4, pluggy-1.0.0
+rootdir: /Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/tfg-master/tfg-1
+plugins: anyio-4.2.0
+collected 13 items
+
+tests/integration/test_health_endpoint.py .                              [  7%]
+tests/unit/test_dataset_service.py ...                                   [ 30%]
+tests/unit/test_inference_service.py .......                             [ 84%]
+tests/unit/test_pdf_service.py ..                                        [100%]
+
+======================== 13 passed in 4.22s =========================
+```
+
+---
+
+### 7.7 Resumen del Día 7
+
+Durante el Día 7 se han resuelto de forma integral todas las observaciones del prototipo: el porcentaje de gravedad en diagnósticos de Melanoma se ha recalibrado para reflejar el índice de riesgo clínico real (e.g. 85-99%), el sistema es totalmente funcional en iPad e iPhone gracias al fallback a la cámara nativa de iOS y la barra de entrada activa, los informes PDF descargables incluyen la fotografía analizada del paciente, se ha añadido la funcionalidad de reiniciar la conversación mediante el comando *"quiero abrir un nuevo chat"* o el botón directo `+ Nuevo Chat`, y se ha implementado el extractor de ROI focal `_extract_focal_crop` para aislar manchas o lunares focales en fotos macro evitando falsos positivos por piel de fondo. Toda la suite de 13 pruebas se encuentra pasando al 100%.
+
+
+

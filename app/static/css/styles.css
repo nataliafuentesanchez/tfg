@@ -316,6 +316,24 @@ html, body {
   box-shadow: 0 0 8px #10b981;
 }
 
+.new-chat-btn {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  color: #c084fc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.new-chat-btn:hover {
+  background: rgba(139, 92, 246, 0.3);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
 .back-home-btn {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -618,8 +636,22 @@ html, body {
   outline: none;
 }
 
-.chat-input-field::placeholder {
-  color: var(--text-dim);
+.chat-input-field:focus {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+}
+
+.btn-send {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  padding: 11px 14px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.btn-send:hover {
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.55);
+  transform: translateY(-1px);
 }
 
 .footer-action-buttons {

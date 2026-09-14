@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import json
+import base64
 from io import BytesIO
 from typing import Optional, Dict, Any
 
@@ -210,8 +211,10 @@ def _extract_abcde_features(image: np.ndarray) -> Dict[str, Any]:
     lesion_mask = cv2.morphologyEx(lesion_mask, cv2.MORPH_CLOSE, kernel)
 
     # 1. B - Borde y D - Diametro
+    # Filtrar contornos muy grandes (e.g. >35% de la imagen que son fondo de piel/oreja)
+    max_frame_area = 224 * 224 * 0.35
     contours, _ = cv2.findContours(lesion_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 25]
+    contours = [cnt for cnt in contours if 25 < cv2.contourArea(cnt) <= max_frame_area]
     if contours:
         largest = max(contours, key=cv2.contourArea)
         area = cv2.contourArea(largest)
@@ -355,23 +358,78 @@ def _format_structured_report(
     )
 
 
+def _extract_focal_crop(pil_image: Image.Image) -> Image.Image:
+    """Extrae el área de interés (ROI) de la lesión focal evitando fondos anatómicos o piel circundante limpia."""
+    try:
+        cv_img = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+        h, w, _ = cv_img.shape
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+
+        # Detección de pigmento focal más oscuro que el tono de piel dominante
+        dark_thresh = float(np.percentile(gray, 6))
+        dark_mask = (gray < dark_thresh).astype(np.uint8) * 255
+
+        cnts, _ = cv2.findContours(dark_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        min_area = h * w * 0.0008
+        max_area = h * w * 0.30
+
+        valid_cnts = [c for c in cnts if min_area <= cv2.contourArea(c) <= max_area]
+        if not valid_cnts:
+            return pil_image
+
+        best_cnt = max(valid_cnts, key=cv2.contourArea)
+        x, y, bw, bh = cv2.boundingRect(best_cnt)
+        
+        pad = int(max(bw, bh) * 0.8)
+        x1, y1 = max(0, x - pad), max(0, y - pad)
+        x2, y2 = min(w, x + bw + pad), min(h, y + bh + pad)
+
+        crop = cv_img[y1:y2, x1:x2]
+        if crop.shape[0] < 24 or crop.shape[1] < 24:
+            return pil_image
+
+        return Image.fromarray(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB))
+    except Exception:
+        return pil_image
+
+
 def _predict_with_cnn(content: bytes) -> tuple[float, str, dict[str, float], str]:
-    """Ejecuta inferencia mediante la red neuronal convolucional ResNet-18."""
+    """Ejecuta inferencia mediante la red neuronal convolucional ResNet-18 sobre la imagen completa y la ROI focal."""
     model, device, _ = _load_cnn_model()
     if model is None:
         raise RuntimeError("Modelo CNN no disponible.")
 
     pil_image = Image.open(BytesIO(content)).convert("RGB")
-    tensor = _eval_transform(pil_image).unsqueeze(0).to(device)
+    focal_crop = _extract_focal_crop(pil_image)
 
+    # Inferencia 1: Imagen completa
+    t_full = _eval_transform(pil_image).unsqueeze(0).to(device)
     with torch.no_grad():
-        logits = model(tensor)
-        probabilities = torch.softmax(logits, dim=1).squeeze(0).cpu().numpy()
+        logits_full = model(t_full)
+        probs_full = torch.softmax(logits_full, dim=1).squeeze(0).cpu().numpy()
 
     dx_idx_to_name = {
         0: "nv", 1: "mel", 2: "bkl", 3: "bcc", 
         4: "akiec", 5: "vasc", 6: "df"
     }
+
+    # Inferencia 2: ROI de la lesión focal (si difiere)
+    if focal_crop is not pil_image:
+        t_crop = _eval_transform(focal_crop).unsqueeze(0).to(device)
+        with torch.no_grad():
+            logits_crop = model(t_crop)
+            probs_crop = torch.softmax(logits_crop, dim=1).squeeze(0).cpu().numpy()
+
+        p_crop_dict = {dx_idx_to_name[i]: float(p) for i, p in enumerate(probs_crop)}
+        p_full_dict = {dx_idx_to_name[i]: float(p) for i, p in enumerate(probs_full)}
+
+        # Si la ROI focal identifica claramente una lesión benigna (nv o bkl) y el fondo completo sugería akiec
+        if (p_crop_dict["nv"] >= 0.20 or p_crop_dict["bkl"] >= 0.20) and p_full_dict["akiec"] > 0.40:
+            probabilities = probs_crop
+        else:
+            probabilities = (probs_full * 0.5 + probs_crop * 0.5)
+    else:
+        probabilities = probs_full
 
     prob_dict = {dx_idx_to_name[i]: float(prob) for i, prob in enumerate(probabilities)}
     malignant_risk = prob_dict["mel"] + prob_dict["bcc"] + prob_dict["akiec"]
@@ -385,6 +443,7 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
     image = _decode_image(content)
     # Extraccion de criterios clinicos ABCDE
     abcde_features = _extract_abcde_features(image)
+    image_b64_str = f"data:image/jpeg;base64,{base64.b64encode(content).decode('utf-8')}"
 
     # 1. Inferencia con la Red Neuronal (ResNet-18)
     model, _, _ = _load_cnn_model()
@@ -403,11 +462,6 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
             )
 
             # Determinación de patología de referencia y triage clínico
-            # Regla de Triage Clinico:
-            # 1. Alerta por Melanoma: sospecha individual mel_prob >= 0.15 o top_dx == "mel" -> "mel" (GRAVE)
-            # 2. Alerta por Carcinoma Basocelular: top_dx == "bcc" o bcc_prob >= 0.20 -> "bcc" (MODERADO)
-            # 3. Alerta por Queratosis Actinica (Premaligna): top_dx == "akiec" o akiec_prob >= 0.20 -> "akiec" (LEVE - MODERADO)
-            # 4. Otras patologías según predicción ganadora o agregada
             if top_dx == "mel" or mel_prob >= 0.15:
                 detected_dx = "mel"
             elif top_dx == "bcc" or bcc_prob >= 0.20:
@@ -420,11 +474,6 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
                 detected_dx = top_dx
 
             info = PATOLOGY_CLINICAL_MATRIX[detected_dx]
-            
-            # Cálculo de compatibilidad porcentual
-            compat_pct = probs.get(detected_dx, 0.0) * 100.0
-            if detected_dx in MALIGNANT_CLASSES:
-                compat_pct = max(compat_pct, malignant_risk * 100.0)
 
             # Risk score calibrado numérico [0.0 - 1.0]
             if detected_dx == "mel":
@@ -435,6 +484,9 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
                 effective_risk = max(0.25, min(0.48, akiec_prob * 1.3 + malignant_risk * 0.4))
             else:
                 effective_risk = min(0.12, malignant_risk)
+
+            # Cálculo de compatibilidad / riesgo porcentual calibrado
+            compat_pct = max(probs.get(detected_dx, 0.0) * 100.0, effective_risk * 100.0)
 
             user_report_text = _format_structured_report(
                 state=info["state"],
@@ -458,7 +510,8 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
                 recommendation=info["recommendation"],
                 user_report=user_report_text,
                 disclaimer="Herramienta de cribado y apoyo a la decisión clínica por IA. No sustituye el diagnóstico anatomopatológico.",
-                abcde_analysis=abcde_features
+                abcde_analysis=abcde_features,
+                image_base64=image_b64_str
             )
         except Exception as e:
             print(f"Aviso en inferencia CNN ({e}), usando fallback...")
@@ -499,6 +552,7 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
         recommendation=info_fb["recommendation"],
         user_report=user_report_text,
         disclaimer="Herramienta de cribado y apoyo a la decisión clínica por IA. No sustituye el diagnóstico anatomopatológico.",
-        abcde_analysis=abcde_features
+        abcde_analysis=abcde_features,
+        image_base64=image_b64_str
     )
 

@@ -72,6 +72,7 @@ def index() -> str:
             </div>
             <div class="chat-header-right">
               <span class="status-pill"><span class="online-dot"></span> En línea</span>
+              <button class="new-chat-btn" id="newChatBtn" title="Abrir nuevo chat">+ Nuevo Chat</button>
               <button class="back-home-btn" id="backToLandingBtn" title="Volver al inicio">⟵ Inicio</button>
             </div>
           </header>
@@ -87,6 +88,7 @@ def index() -> str:
                 <ul class="guide-options-list">
                   <li>• Pulsa <strong>📷 Cámara</strong> para tomar una foto en directo.</li>
                   <li>• Pulsa <strong>📁 Subir</strong> para seleccionar una imagen de tu dispositivo.</li>
+                  <li>• O escribe <strong>"quiero abrir un nuevo chat"</strong> en cualquier momento para reiniciar la sesión.</li>
                 </ul>
               </div>
             </div>
@@ -109,9 +111,14 @@ def index() -> str:
 
           <!-- Barra inferior de entrada y botones -->
           <footer class="chat-footer-bar">
-            <div class="input-container-fake">
-              <input type="text" class="chat-input-field" id="chatTextInput" placeholder="Escribe o pulsa un botón..." readonly />
-            </div>
+            <form id="chatForm" style="display: flex; flex: 1; align-items: center; gap: 8px;" onsubmit="return false;">
+              <div class="input-container-fake">
+                <input type="text" class="chat-input-field" id="chatTextInput" placeholder="Escribe un mensaje o 'nuevo chat'..." autocomplete="off" />
+              </div>
+              <button class="action-btn btn-send" id="sendTextMsgBtn" type="submit" title="Enviar mensaje">
+                <span class="btn-icon">➤</span>
+              </button>
+            </form>
             <div class="footer-action-buttons">
               <button class="action-btn btn-camera" id="cameraActionBtn" type="button">
                 <span class="btn-icon">📷</span>
@@ -129,8 +136,8 @@ def index() -> str:
 
     </div>
 
-    <!-- Hidden File Input -->
-    <input id="fileInputHidden" type="file" accept="image/*" hidden />
+    <!-- Hidden File Input con soporte de cámara en móviles/tablets -->
+    <input id="fileInputHidden" type="file" accept="image/*" capture="environment" hidden />
 
     <!-- Modal de Cámara Web -->
     <div class="camera-modal" id="cameraModal" style="display: none;">

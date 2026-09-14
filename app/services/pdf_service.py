@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import base64
 from io import BytesIO
 from datetime import datetime
 from typing import Dict, Any
@@ -14,7 +15,7 @@ from typing import Dict, Any
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, KeepTogether
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, KeepTogether, Image as RLImage
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
@@ -127,6 +128,19 @@ def generate_clinical_pdf(analysis_data: Dict[str, Any]) -> bytes:
     story.append(badge_table)
     story.append(Spacer(1, 12))
 
+    # Extracción y decodificación de la imagen del usuario
+    image_element = None
+    img_b64 = analysis_data.get("image_base64")
+    if img_b64:
+        try:
+            if "," in img_b64:
+                img_b64 = img_b64.split(",", 1)[1]
+            img_bytes = base64.b64decode(img_b64)
+            img_io = BytesIO(img_bytes)
+            image_element = RLImage(img_io, width=125, height=125)
+        except Exception as e:
+            print(f"Aviso al procesar imagen base64 para PDF: {e}")
+
     patology = analysis_data.get("likely_cause", "No especificado")
     risk_score = analysis_data.get("risk_score", 0.0)
     primary_label = "SANO / BENIGNO" if analysis_data.get("primary_label") == "sano" else "ENFERMO / SOSPECHA"
@@ -154,14 +168,46 @@ def generate_clinical_pdf(analysis_data: Dict[str, Any]) -> bytes:
             Paragraph(str(analysis_data.get("filename", "imagen.jpg")), body_style)
         ],
     ]
-    metrics_table = Table(metrics_table_data, colWidths=[200, 330])
-    metrics_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0, 0), (-1, -1), 6),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-    ]))
-    story.append(metrics_table)
+
+    if image_element:
+        metrics_table = Table(metrics_table_data, colWidths=[150, 220])
+        metrics_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('PADDING', (0, 0), (-1, -1), 5),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        
+        image_box_data = [
+            [Paragraph("<b>Fotografia de la lesion:</b>", body_style)],
+            [image_element]
+        ]
+        image_box_table = Table(image_box_data, colWidths=[150])
+        image_box_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F1F5F9')),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+            ('PADDING', (0, 0), (-1, -1), 4),
+        ]))
+
+        combined_data = [[metrics_table, image_box_table]]
+        combined_table = Table(combined_data, colWidths=[375, 155])
+        combined_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (1, 0), (1, 0), 5),
+        ]))
+        story.append(combined_table)
+    else:
+        metrics_table = Table(metrics_table_data, colWidths=[200, 330])
+        metrics_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('PADDING', (0, 0), (-1, -1), 6),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        story.append(metrics_table)
+
     story.append(Spacer(1, 14))
 
     story.append(Paragraph("EVALUACION VISUAL (CRITERIOS ABCDE)", section_header_style))
