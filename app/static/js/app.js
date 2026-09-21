@@ -286,19 +286,19 @@ async function handleUserTextMessage(text) {
       message: text,
       history: chatHistory.slice(-8),
       analysis_context: lastAnalysisResult ? {
-        diagnóstico_principal: {
+        "diagnóstico_principal": {
           etiqueta_es: lastAnalysisResult.likely_cause,
           codigo: lastAnalysisResult.primary_label,
-          confianza_porcentaje: Math.round(lastAnalysisResult.confidence * 100)
+          confianza_porcentaje: Math.round((lastAnalysisResult.risk_score || 0) * 100)
         },
         gravedad: {
           nivel: lastAnalysisResult.severity,
-          descripcion: lastAnalysisResult.severity_desc,
-          porcentaje_gravedad: lastAnalysisResult.severity_pct
+          descripcion: lastAnalysisResult.benign_malignant === "maligno_probable" ? "Lesión con signos de malignidad" : "Lesión con patrón benigno",
+          porcentaje_gravedad: Math.round((lastAnalysisResult.risk_score || 0) * 100)
         },
         regla_abcde: lastAnalysisResult.abcde_analysis,
         derivacion: {
-          prioridad: lastAnalysisResult.urgency,
+          prioridad: lastAnalysisResult.referral,
           mensaje: lastAnalysisResult.recommendation
         }
       } : null

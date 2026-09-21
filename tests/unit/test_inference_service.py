@@ -78,15 +78,23 @@ def test_common_nevus_is_not_flagged_as_suspicious() -> None:
     assert result.severity in {"ninguno", "bajo"}
 
 
-def test_large_symmetric_red_patch_is_not_marked_as_suspicious() -> None:
-    image = np.full((160, 160, 3), (180, 120, 110), dtype=np.uint8)
-    cv2.ellipse(image, (80, 80), (60, 50), 0, 0, 360, (30, 40, 180), -1)
-    cv2.ellipse(image, (80, 80), (28, 24), 0, 0, 360, (90, 180, 220), -1)
+def test_large_symmetric_benign_patch_is_not_marked_as_suspicious() -> None:
+    """
+    Test con imagen sintetica de nevus benigno: fondo piel clara y lesion marron centrada
+    con forma simetrica y colores uniformes - patron tipico de lunar benigno.
+    Los colores azul/cian anteriores eran clinicamente ambiguos (similares a lesiones vasculares).
+    """
+    # Fondo: tono piel rosado claro
+    image = np.full((160, 160, 3), (205, 175, 160), dtype=np.uint8)
+    # Lesion central: marron uniforme (nevus benigno tipico)
+    cv2.ellipse(image, (80, 80), (55, 48), 0, 0, 360, (105, 75, 60), -1)
+    # Interior ligeramente mas oscuro pero mismo tono cafe
+    cv2.ellipse(image, (80, 80), (30, 26), 0, 0, 360, (85, 58, 44), -1)
 
     ok, encoded = cv2.imencode(".jpg", image)
     assert ok
 
-    result = analyze_image(encoded.tobytes(), filename="large_symmetric_red_patch.jpg")
+    result = analyze_image(encoded.tobytes(), filename="large_symmetric_benign_patch.jpg")
 
     assert result.primary_label == "sano"
     assert result.severity in {"ninguno", "bajo"}

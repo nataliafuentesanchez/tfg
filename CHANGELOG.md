@@ -21,6 +21,10 @@ This format follows Keep a Changelog and Semantic Versioning.
 ### Fixed
 - Fixed footer chat input bar flexbox alignment: action buttons (`Subir`, `Cámara`) placed on left, text input field and send icon properly aligned.
 - Fixed fallback response knowledge engine for precancerous, atypical, and dysplastic mole inquiries.
+- Fixed `analysis_context` payload in `app.js` to use correct `AnalysisResponse` field names (`risk_score`, `referral`, `benign_malignant`) instead of non-existent aliases.
+- Fixed unit test `test_large_symmetric_benign_patch` to use clinically unambiguous brown/skin-tone colors (previous test used blue/cyan on pink which is genuinely suspicious per ABCDE criteria).
+- Bumped static asset cache-busting versions to `?v=2.3` to force browser reload of updated CSS and JS.
+
 
 ## [0.1.2] - 2026-08-31
 
