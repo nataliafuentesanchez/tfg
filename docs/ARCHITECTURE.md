@@ -10,12 +10,13 @@
 
 | Capa | Tecnología | Justificación |
 | --- | --- | --- |
-| **Lenguaje** | Python 3.11+ | Ecosistema maduro para IA medica e integracion rapida |
-| **Framework principal** | FastAPI + Uvicorn | API web ligera y rapida para demo funcional |
-| **Pipeline CV/IA** | OpenCV + PyTorch | Preprocesado de imagen + inferencia de clasificacion |
-| **Persistencia** | Sin BD en v1 (archivos CSV/JSON) | Reducir complejidad para entrega inicial |
-| **Testing** | Pytest | Pruebas unitarias e integracion de endpoints |
-| **CI/CD** | No aplicable en v1 | Fuera de alcance para demo en 30 minutos |
+| **Lenguaje** | Python 3.11+ | Ecosistema maduro para IA médica e integración rápida |
+| **Framework principal** | FastAPI + Uvicorn | API web ligera y rápida para interfaz conversacional |
+| **Pipeline CV/IA** | OpenCV + PyTorch (ResNet-18) | Preprocesado de imagen + inferencia de clasificación |
+| **LLM Conversacional** | Google Gemini API (`google-genai`) | Chatbot inteligente (Olivia) para diálogo y explicación clínica |
+| **Persistencia** | Sin BD en v1 (archivos CSV/JSON / memoria local) | Reducir complejidad para entrega inicial |
+| **Testing** | Pytest | Pruebas unitarias e integración de endpoints |
+| **CI/CD** | No aplicable en v1 | Fuera de alcance para demo |
 
 ---
 
@@ -25,17 +26,17 @@
 /
 ├── app/
 │   ├── main.py           # Entrada FastAPI
-│   ├── api/              # Endpoints web
-│   ├── services/         # Logica de analisis e inferencia
-│   ├── ml/               # Carga de modelo y utilidades IA
-│   └── schemas/          # Modelos de peticion/respuesta
+│   ├── api/              # Endpoints web (/analyze, /chat, /download-report-pdf)
+│   ├── services/         # Lógica de análisis (inference_service.py, gemini_service.py, pdf_service.py)
+│   ├── ml/               # Carga de modelo ResNet-18 y utilidades IA
+│   └── schemas/          # Modelos de petición/respuesta (prediction.py, chat.py)
 ├── tests/
 │   ├── unit/
 │   └── integration/
 ├── data/
-│   ├── samples/          # Imagenes de prueba local
+│   ├── samples/          # Imágenes de prueba local
 │   └── outputs/          # Resultados de inferencia
-├── docs/                # Documentación del proyecto (este directorio)
+├── docs/                 # Documentación del proyecto
 └── requirements.txt      # Dependencias Python
 ```
 
@@ -50,6 +51,12 @@
 - **Autenticación:** No incluida en v1 de demo.
 - **Autorización:** No incluida en v1 de demo.
 - **Datos sensibles:** No almacenar datos personales; usar datasets anonimizados y rutas locales fuera de control de versiones.
+
+### Seguridad y Guardrails de LLM
+
+- **Gestión de Llaves API:** `GEMINI_API_KEY` leída exclusivamente desde variables de entorno (`.env`). Nunca commiteada al repositorio.
+- **Fallback Determínico:** Si la clave no está configurada o se pierde conexión, Olivia responde con un motor guiado amigable para evitar interrumpir la sesión.
+- **System Prompt Clínico (Olivia):** Inyección de rol (médica dermatóloga joven de ~30 años, empática, simpática y profesional) + contexto estricto de la ResNet-18 (imposibilidad de desmentir o rebajar riesgos).
 
 ### Estilo de Código
 

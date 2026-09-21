@@ -1953,9 +1953,6 @@ tests/unit/test_pdf_service.py ..                                        [100%]
   - La función `_predict_with_cnn()` ejecuta la inferencia sobre la ROI focal cuando se detecta un lunar o mancha distinguible, evitando interferencias del enrojecimiento difuso de fondo.
 - **Resultado tras la corrección:** La misma imagen `ISIC_0029389.jpg` pasó de clasificarse como *Queratosis Actínica (64.3%, ENFERMO)* a ser diagnosticada correctamente como **Nevus Melanocítico / Lunar común (SANO / BENIGNO, 0.9% riesgo)**.
 - **Archivos modificados:** `app/services/inference_service.py`.
-
----
-
 ### 7.6 Configuración de Red Local para iPhone/iPad y Actualización de Documentación (`README.md`)
 
 - **Configuración de Red Local:** Se identificó la IP de red local del Mac (`192.168.1.59`) y se verificó la escucha del servidor Uvicorn en `0.0.0.0:8000` para garantizar conectividad fluida desde dispositivos Safari en iPhone y iPad sobre Wi-Fi.
@@ -1983,11 +1980,43 @@ tests/unit/test_pdf_service.py ..                                        [100%]
 ======================== 13 passed in 4.22s =========================
 ```
 
+
 ---
 
-### 7.8 Resumen del Día 7
+## 8. Día 8: Conexión con Gemini LLM, Cerebro de Conversaciones (`localStorage`), Triage Macro Autónomo y Reestructuración de la Interfaz
 
-Durante el Día 7 se han resuelto de forma integral todas las observaciones planteadas sobre el prototipo clínico: el porcentaje de gravedad en diagnósticos de Melanoma se ha recalibrado para reflejar el índice de riesgo clínico real (e.g. 85-99%), el sistema es 100% funcional en iPad e iPhone tanto por red local (`http://192.168.1.59:8000`) como con el fallback automático a la cámara nativa de iOS y la entrada táctil de texto, los informes PDF descargables incluyen la fotografía analizada del paciente, se ha añadido la opción de abrir un nuevo chat mediante texto o botón en la cabecera, y se ha implementado la segmentación por ROI focal (`_extract_focal_crop`) que aísla lunares en fotos macro evitando falsos positivos por piel de fondo. La documentación del proyecto en `README.md` ha sido actualizada y toda la suite de 13 pruebas automatizadas está validada al 100%.
+### 8.1 Metodología Aplicada: Spec-Driven Development (SDD)
+Durante esta jornada se ha seguido estrictamente el ciclo de desarrollo guiado por especificaciones (SDD):
+1. **Fase `/spec`**: Definición de los requisitos para la integración de la API viva de Google Gemini (`gemini-3.6-flash`), la gestión del historial multi-sesión del usuario ("Cerebro de Olivia") y la eliminación de acoplamientos por nombre de archivo en el triaje de imágenes.
+2. **Fase `/plan`**: Diseño del flujo de cascada (fallback cascade) para lidiar con errores 503/404 de la API de Gemini, maquetación de la barra lateral (Side Drawer) responsive y extracción por ROI focal.
+3. **Fase `/build`**: Implementación en `gemini_service.py`, `inference_service.py`, `routes.py`, `styles.css` y `app.js`.
+4. **Fase `/test`**: Ejecución de las 18 pruebas unitarias e integradas de Pytest.
+5. **Fase `/ship`**: Actualización de versión en `CHANGELOG.md` a v0.2.0.
+
+### 8.2 Errores Detectados y Soluciones Técnicas
+- **Error 1: Preguntas clínicas cotidianas recibían respuestas vacías o genéricas (ej: "qué es un lunar precancerígeno").**
+  - *Causa*: El motor local carecía de contexto precancerígeno directo y la clave de API de Gemini fallaba con error 503 por alta demanda o 404 por modelos obsoletos (`gemini-2.5-flash`).
+  - *Solución*: Se implementó un motor de fallbacks con cascada de modelos (`gemini-3.6-flash` $\rightarrow$ `gemini-2.5-flash` $\rightarrow$ `gemini-flash-latest`) y se amplió la base de conocimiento local sobre lesiones precancerígenas (queratosis actínica, nevos displásicos).
+- **Error 2: Desplazamiento visual de la barra de escritura e inconexión de botones.**
+  - *Causa*: Conflicto de posicionamiento `fixed`/`sticky` entre el contenedor de sugerencias y la barra de entrada en pantallas pequeñas.
+  - *Solución*: Reestructuración CSS en `.chat-input-bar` asegurando flex-layout responsivo, fijando el `textarea` y alineando los botones de envío y cámara.
+- **Error 3: Acoplamiento del modelo a nombres de archivo en imágenes de teléfono móvil.**
+  - *Causa*: El triaje dependía de subcadenas en los nombres de archivo.
+  - *Solución*: Eliminación total de dependencias por nombre de archivo en `inference_service.py`. El triaje analiza puramente las características de textura, color, simetría y ROI aislada de la imagen.
+
+### 8.3 Red Neuronal SNN / ResNet-18 y Triaje Clínico
+- **Procesamiento de Imágenes Macro**: La cámara del móvil genera imágenes con varianza en iluminación y fondo. El sistema aplica recorta por densidad morfológica (ROI Focal Crop) y extrae las métricas del algoritmo ABCDE (Asimetría, Bordes, Color, Diámetro y Evolución), evaluando la lesión mediante el motor supervisado ResNet-18.
+
+### 8.4 Cerebro de Olivia (Historial de Conversaciones Previsas)
+- Se incorporó la cabecera interactiva con el avatar de Olivia. Al pulsar sobre el avatar, se despliega una barra lateral (*Drawer*) donde el usuario puede:
+  - Consultar todas sus sesiones previas guardadas automáticamente en `localStorage`.
+  - Iniciar una nueva consulta o regresar al estado inicial.
+  - Recuperar el hilo de conversación anterior con su diagnóstico previo.
+
+---
+
+### 8.5 Resumen del Día 8
+En la jornada del Día 8 se ha llevado el chatbot clínico de Olivia a la versión `0.2.0`. Olivia ahora cuenta con inteligencia conversacional viva mediante Google Gemini (`gemini-3.6-flash`), con capacidad de responder cualquier duda dermatológica con empatía médica (rol de doctora de 30 años). Se ha solucionado el problema de maquetación del input de texto, se ha independizado el motor de visión clínica de los nombres de archivo para fotografías caseras, se ha añadido la función "Cerebro de Olivia" para recuperar conversaciones previas, y se ha actualizado tanto la suite de tests (18/18 tests pasando) como la documentación en `CHANGELOG.md`.
 
 
 

@@ -773,3 +773,382 @@ html, body {
   .orb-core { width: 190px; height: 190px; }
   .action-btn { padding: 10px 12px; font-size: 0.84rem; }
 }
+
+/* ==========================================
+   SUGERENCIAS RÁPIDAS (QUICK CHIPS) CHAT
+   ========================================== */
+.quick-chips-container {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chips-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chips-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-btn {
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #818cf8;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* ==========================================
+   ESTILOS DE JERARQUÍA Y TITULARES EN CHAT
+   ========================================== */
+.olivia-reply-bubble .chat-heading-h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-top: 18px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+  padding-bottom: 4px;
+}
+
+.olivia-reply-bubble .chat-heading-h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #c084fc;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.olivia-reply-bubble .chat-paragraph {
+  font-size: 0.94rem;
+  line-height: 1.65;
+  color: #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.olivia-reply-bubble .chat-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  padding-left: 4px;
+}
+
+.olivia-reply-bubble .chat-bullet-icon {
+  color: #38bdf8;
+  font-size: 0.75rem;
+  margin-top: 3px;
+}
+
+.olivia-reply-bubble .chat-bullet-txt {
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: #f1f5f9;
+}
+
+.olivia-reply-bubble .chat-num-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 14px;
+  margin-bottom: 12px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid #818cf8;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+
+.olivia-reply-bubble .chat-num-badge {
+  background: #6366f1;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.olivia-reply-bubble .chat-num-content {
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: #f8fafc;
+  flex: 1;
+}
+
+/* ==========================================
+   BARRA INFERIOR DE ENTRADA Y ACCIONES
+   ========================================== */
+.chat-header-left {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.chat-header-left:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.brain-badge {
+  font-size: 0.72rem;
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.12);
+  border: 1px solid rgba(192, 132, 252, 0.3);
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+.chat-input-bar {
+  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.input-actions-left {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-input-form {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  position: relative;
+}
+
+.chat-text-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 12px 48px 12px 18px;
+  color: #f8fafc;
+  font-size: 0.92rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.chat-text-input:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.send-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-btn:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  transform: translateY(-50%) scale(1.05);
+}
+
+/* ==========================================
+   PANEL LATERAL (CEREBRO / HISTORIAL CHATS)
+   ========================================== */
+.history-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 200;
+  display: flex;
+}
+
+.history-drawer-backdrop {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.history-drawer-content {
+  position: relative;
+  width: 340px;
+  max-width: 85%;
+  height: 100%;
+  background: #0f172a;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 201;
+  box-shadow: 5px 0 25px rgba(0, 0, 0, 0.5);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.drawer-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.drawer-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.drawer-subtitle {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  display: block;
+  margin-top: 2px;
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btn-new-chat-drawer {
+  flex: 1;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.btn-home-drawer {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+}
+
+.drawer-section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #c084fc;
+  margin-top: 10px;
+}
+
+.drawer-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+}
+
+.drawer-session-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer-session-card:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateX(3px);
+}
+
+.drawer-session-card.active-session {
+  border-left: 3px solid #818cf8;
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.session-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.session-card-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.session-card-date {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.session-card-preview {
+  font-size: 0.78rem;
+  color: #a5b4fc;
+}
+
+.drawer-empty-msg {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-align: center;
+  padding: 20px 10px;
+}

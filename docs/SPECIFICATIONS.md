@@ -32,14 +32,19 @@
   - **Criterio de aceptacion:** El resultado incluye categoria benigno o maligno con score de confianza.
 - [ ] **Recomendacion de derivacion:** [CONFIRMADO] Sugerir derivacion al dermatologo de turno cuando se detecte riesgo clinico.
   - **Criterio de aceptacion:** Si el caso es peligro o maligno probable, el sistema marca prioridad alta de revision dermatologica.
-- [ ] **Interfaz web clinica minima:** [CONFIRMADO] Exponer el flujo mediante aplicacion web basada en FastAPI.
-  - **Criterio de aceptacion:** El usuario puede cargar imagen, ejecutar analisis y visualizar resultado en navegador.
+- [ ] **Interfaz web clínica mínima:** [CONFIRMADO] Exponer el flujo mediante aplicación web basada en FastAPI.
+  - **Criterio de aceptación:** El usuario puede cargar imagen, ejecutar análisis y visualizar resultado en navegador.
+- [ ] **Agente Conversacional Inteligente (OLIVIA + Google Gemini API):** [CONFIRMADO] Chatbot conversacional integrado con la API de Google Gemini para interacción abierta y explicación fluida de informes.
+  - **Perfil de Personalidad:** Médica dermatóloga joven (~30 años), muy agradable, gentil, simpática y profesional. Transmite calidez, calma y confianza al paciente.
+  - **Conversación Libre Abierta:** El usuario puede realizar preguntas sobre cualquier problema dermatológico, síntoma o duda general desde el primer momento, además de consultar el informe de la ResNet-18.
+  - **Sugerencia Proactiva:** Olivia sugiere preguntas relevantes y chips de consulta rápida de forma natural para orientar al paciente.
+  - **Límites Éticos y Seguridad:** Mantiene un tono profesional que transmite seguridad, recordando amablemente que es un asistente de apoyo basado en IA y que la consulta dermatológica es la referencia definitiva.
 
 ## 🏗️ 4. Propuesta de Solución Técnica (Resumen)
 *Enlace directo con `ARCHITECTURE.md`.*
 
-- **Enfoque:** [CONFIRMADO] Arquitectura en dos capas: backend web con FastAPI + modulo de IA para inferencia dermatologica sobre imagenes.
-- **Dependencias Críticas:** [INFERIDO] FastAPI/Uvicorn para API web, OpenCV y/o scikit-image para preprocesado, PyTorch para modelo de vision, pandas para trazabilidad de resultados.
+- **Enfoque:** [CONFIRMADO] Arquitectura en tres capas: backend web con FastAPI + módulo de inferencia ResNet-18 para visión + módulo conversacional con Google Gemini API (`google-genai`).
+- **Dependencias Críticas:** [CONFIRMADO] FastAPI/Uvicorn, OpenCV, PyTorch, ReportLab, `google-genai` (SDK de Gemini), `python-dotenv`.
 - **Oportunidades de Skills y MCPs**: [INFERIDO] Mantener fuera de alcance inicial; valorar cuando exista pipeline estable.
 - **Sistema de Diseño:** [PENDIENTE] Interfaz web funcional y simple; el detalle visual se definira en `docs/DESIGN.md` si se amplian requisitos UX.
 

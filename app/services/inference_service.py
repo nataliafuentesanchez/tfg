@@ -454,22 +454,22 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
             bcc_prob = probs.get("bcc", 0.0)
             akiec_prob = probs.get("akiec", 0.0)
 
-            # Criterios morfologicos atipicos
+            # Criterios morfológicos atípicos para fotos de teléfono móvil / cámaras no dermatoscópicas
             abcde_is_atypical = (
-                abcde_features["asymmetry_score"] >= 0.28
+                abcde_features["asymmetry_score"] >= 0.25
                 or abcde_features["border_score"] >= 0.25
                 or abcde_features["color_score"] >= 0.25
             )
 
-            # Determinación de patología de referencia y triage clínico
-            if top_dx == "mel" or mel_prob >= 0.15:
+            # Determinación de patología de referencia y triage clínico independiente del nombre del archivo
+            if top_dx == "mel" or mel_prob >= 0.25 or (abcde_is_atypical and mel_prob >= 0.15):
                 detected_dx = "mel"
-            elif top_dx == "bcc" or bcc_prob >= 0.20:
+            elif top_dx == "bcc" or bcc_prob >= 0.25:
                 detected_dx = "bcc"
-            elif top_dx == "akiec" or akiec_prob >= 0.20:
+            elif top_dx == "akiec" or akiec_prob >= 0.25:
                 detected_dx = "akiec"
-            elif abcde_is_atypical and malignant_risk >= 0.15:
-                detected_dx = "akiec" if akiec_prob >= bcc_prob else "bcc"
+            elif abcde_is_atypical and malignant_risk >= 0.35:
+                detected_dx = "mel" if mel_prob >= 0.10 else ("akiec" if akiec_prob >= bcc_prob else "bcc")
             else:
                 detected_dx = top_dx
 
@@ -522,9 +522,9 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
     contrast = float(np.std(gray) / 128.0)
     risk_score = float(np.clip(contrast * 0.5, 0.0, 1.0))
     
-    if risk_score >= 0.55:
+    if risk_score >= 0.65:
         dx_fb = "mel"
-    elif risk_score >= 0.35:
+    elif risk_score >= 0.45:
         dx_fb = "akiec"
     else:
         dx_fb = "nv"

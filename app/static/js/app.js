@@ -5,7 +5,7 @@
 // Built with dbv-specs-ops - https://github.com/davidbuenov/dbv-specs-ops
 // =============================================================================
 
-// Elementos de la UI
+// Elementos de la UI principales
 const step1Landing = document.getElementById("step1Landing");
 const step2Chat = document.getElementById("step2Chat");
 const sphereTrigger = document.getElementById("sphereTrigger");
@@ -32,8 +32,138 @@ const webcamVideo = document.getElementById("webcamVideo");
 const webcamCanvas = document.getElementById("webcamCanvas");
 const snapPhotoBtn = document.getElementById("snapPhotoBtn");
 
+// Panel Lateral (Cerebro e Historial)
+const openHistoryDrawerBtn = document.getElementById("openHistoryDrawerBtn");
+const historyDrawer = document.getElementById("historyDrawer");
+const closeDrawerBtn = document.getElementById("closeDrawerBtn");
+const closeDrawerBackdrop = document.getElementById("closeDrawerBackdrop");
+const drawerNewChatBtn = document.getElementById("drawerNewChatBtn");
+const drawerHomeBtn = document.getElementById("drawerHomeBtn");
+const drawerHistoryList = document.getElementById("drawerHistoryList");
+
 let streamWebcam = null;
 let lastAnalysisResult = null;
+let chatHistory = [];
+let currentSessionId = "session_" + Date.now();
+
+// ==========================================
+// GESTIÓN DE ALMACENAMIENTO DE CHATS (CEREBRO)
+// ==========================================
+function saveCurrentSessionToBrain() {
+  try {
+    const savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
+    const existingIdx = savedSessions.findIndex(s => s.id === currentSessionId);
+    
+    // Titulo descriptivo basado en el ultimo mensaje o diagnostico
+    let sessionTitle = "Consulta dermatológica";
+    if (lastAnalysisResult && lastAnalysisResult.likely_cause) {
+      sessionTitle = "Análisis: " + lastAnalysisResult.likely_cause;
+    } else if (chatHistory.length > 0) {
+      const firstUserMsg = chatHistory.find(m => m.sender === "user");
+      if (firstUserMsg) {
+        sessionTitle = firstUserMsg.text.length > 30 ? firstUserMsg.text.substring(0, 30) + "..." : firstUserMsg.text;
+      }
+    }
+
+    const sessionData = {
+      id: currentSessionId,
+      title: sessionTitle,
+      dateStr: new Date().toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+      chatHistory: chatHistory,
+      lastAnalysisResult: lastAnalysisResult,
+      entriesHtml: dynamicChatEntries ? dynamicChatEntries.innerHTML : ""
+    };
+
+    if (existingIdx >= 0) {
+      savedSessions[existingIdx] = sessionData;
+    } else {
+      savedSessions.unshift(sessionData);
+    }
+
+    localStorage.setItem("olivia_saved_sessions", JSON.stringify(savedSessions.slice(0, 20)));
+  } catch (err) {
+    console.warn("No se pudo guardar la sesión en Cerebro de Olivia:", err);
+  }
+}
+
+function loadBrainHistoryList() {
+  if (!drawerHistoryList) return;
+  drawerHistoryList.innerHTML = "";
+  
+  try {
+    const savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
+    
+    if (savedSessions.length === 0) {
+      drawerHistoryList.innerHTML = `<div class="drawer-empty-msg">No hay chats anteriores guardados. ¡Empieza a conversar con la Dra. Olivia!</div>`;
+      return;
+    }
+
+    savedSessions.forEach(session => {
+      const card = document.createElement("div");
+      card.className = "drawer-session-card" + (session.id === currentSessionId ? " active-session" : "");
+      card.innerHTML = `
+        <div class="session-card-header">
+          <span class="session-card-title">${session.title}</span>
+          <span class="session-card-date">${session.dateStr}</span>
+        </div>
+        <div class="session-card-preview">${session.chatHistory ? session.chatHistory.length : 0} mensajes guardados</div>
+      `;
+      card.addEventListener("click", () => restoreSessionFromBrain(session.id));
+      drawerHistoryList.appendChild(card);
+    });
+  } catch (err) {
+    drawerHistoryList.innerHTML = `<div class="drawer-empty-msg">Error al cargar el historial de chats.</div>`;
+  }
+}
+
+function restoreSessionFromBrain(sessionId) {
+  try {
+    const savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
+    const session = savedSessions.find(s => s.id === sessionId);
+    if (!session) return;
+
+    currentSessionId = session.id;
+    lastAnalysisResult = session.lastAnalysisResult || null;
+    chatHistory = session.chatHistory || [];
+    
+    if (dynamicChatEntries) {
+      dynamicChatEntries.innerHTML = session.entriesHtml || "";
+    }
+    
+    closeDrawer();
+    goToChat();
+    scrollToBottom();
+  } catch (err) {
+    alert("No se pudo restaurar la sesión seleccionada.");
+  }
+}
+
+function openDrawer() {
+  loadBrainHistoryList();
+  if (historyDrawer) historyDrawer.style.display = "flex";
+}
+
+function closeDrawer() {
+  if (historyDrawer) historyDrawer.style.display = "none";
+}
+
+if (openHistoryDrawerBtn) openHistoryDrawerBtn.addEventListener("click", openDrawer);
+if (closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
+if (closeDrawerBackdrop) closeDrawerBackdrop.addEventListener("click", closeDrawer);
+
+if (drawerNewChatBtn) {
+  drawerNewChatBtn.addEventListener("click", () => {
+    closeDrawer();
+    resetChatSession();
+  });
+}
+
+if (drawerHomeBtn) {
+  drawerHomeBtn.addEventListener("click", () => {
+    closeDrawer();
+    goToLanding();
+  });
+}
 
 // ==========================================
 // CONTROL DE NAVEGACIÓN (PASO 1 <-> PASO 2)
@@ -57,17 +187,20 @@ if (backToLandingBtn) backToLandingBtn.addEventListener("click", goToLanding);
 // FUNCIÓN PARA CREAR / REINICIAR NUEVO CHAT
 // ==========================================
 function resetChatSession() {
+  currentSessionId = "session_" + Date.now();
   if (dynamicChatEntries) dynamicChatEntries.innerHTML = "";
   lastAnalysisResult = null;
+  chatHistory = [];
   
   const msgRow = document.createElement("div");
   msgRow.className = "chat-msg-row bot-row";
   msgRow.innerHTML = `
     <div class="msg-avatar"><div class="mini-orb"></div></div>
     <div class="msg-bubble welcome-bubble">
-      <p>✨ <strong>¡Nuevo chat iniciado!</strong> Sesión reiniciada correctamente.</p>
-      <p style="margin-top: 6px;">¿Cómo deseas realizar el análisis de tu piel?</p>
+      <p>✨ <strong>¡Nuevo chat iniciado!</strong> Soy la <strong>Dra. Olivia</strong>, tu médica asistencial de orientación dermatológica.</p>
+      <p style="margin-top: 6px;">Puedes preguntarme cualquier duda sobre tu piel, síntomas o subir una fotografía para analizarla:</p>
       <ul class="guide-options-list" style="margin-top: 6px;">
+        <li>• Escribe tus preguntas o dudas médicas directamente abajo.</li>
         <li>• Pulsa <strong>📷 Cámara</strong> para tomar una foto en directo.</li>
         <li>• Pulsa <strong>📁 Subir</strong> para seleccionar una imagen de tu dispositivo.</li>
       </ul>
@@ -75,6 +208,7 @@ function resetChatSession() {
   `;
   dynamicChatEntries.appendChild(msgRow);
   scrollToBottom();
+  saveCurrentSessionToBrain();
 }
 
 if (newChatBtn) {
@@ -82,12 +216,41 @@ if (newChatBtn) {
 }
 
 // ==========================================
-// MANEJO DE ENTRADA DE TEXTO Y COMANDOS CHAT
+// FORMATEADOR DE MARKDOWN Y JERARQUÍA CHAT
 // ==========================================
-function handleUserTextMessage(text) {
+function parseSimpleMarkdown(text) {
+  if (!text) return "";
+  
+  let str = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  str = str.replace(/^###\s+(.+)$/gm, '<h4 class="chat-heading-h4">$1</h4>');
+  str = str.replace(/^##\s+(.+)$/gm, '<h3 class="chat-heading-h3">$1</h3>');
+  str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  str = str.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  str = str.replace(/^[\*•]\s+(.+)$/gm, '<div class="chat-bullet-item"><span class="chat-bullet-icon">✦</span><span class="chat-bullet-txt">$1</span></div>');
+  str = str.replace(/^(\d+)\.\s+(.+)$/gm, '<div class="chat-num-item"><span class="chat-num-badge">$1</span><div class="chat-num-content">$2</div></div>');
+
+  const lines = str.split("\n\n");
+  const formattedParagraphs = lines.map(block => {
+    block = block.trim();
+    if (block.startsWith("<h") || block.startsWith("<div")) {
+      return block;
+    }
+    return `<p class="chat-paragraph">${block.replace(/\n/g, "<br/>")}</p>`;
+  });
+
+  return formattedParagraphs.join("");
+}
+
+// ==========================================
+// MANEJO DE ENTRADA DE TEXTO Y GEMINI CHAT
+// ==========================================
+async function handleUserTextMessage(text) {
   if (!text) return;
   
-  // Renderizar mensaje del usuario
   const userRow = document.createElement("div");
   userRow.className = "chat-msg-row user-row";
   userRow.innerHTML = `
@@ -96,7 +259,9 @@ function handleUserTextMessage(text) {
     </div>
   `;
   dynamicChatEntries.appendChild(userRow);
+  chatHistory.push({ sender: "user", text: text });
   scrollToBottom();
+  saveCurrentSessionToBrain();
 
   const lower = text.toLowerCase();
   if (
@@ -110,21 +275,100 @@ function handleUserTextMessage(text) {
     setTimeout(() => {
       resetChatSession();
     }, 400);
-  } else {
-    setTimeout(() => {
-      const botRow = document.createElement("div");
-      botRow.className = "chat-msg-row bot-row";
-      botRow.innerHTML = `
-        <div class="msg-avatar"><div class="mini-orb"></div></div>
-        <div class="msg-bubble">
-          <p>¡Hola! Soy <strong>OLIVIA</strong>. Si deseas reiniciar la conversación, escribe <strong>"quiero abrir un nuevo chat"</strong> o pulsa en <strong>+ Nuevo Chat</strong> arriba.</p>
-          <p style="margin-top: 6px;">Para analizar una lesión en tu piel, utiliza los botones de abajo: <strong>📷 Cámara</strong> para captura directa o <strong>📁 Subir</strong> para seleccionar una imagen.</p>
-        </div>
-      `;
-      dynamicChatEntries.appendChild(botRow);
-      scrollToBottom();
-    }, 300);
+    return;
   }
+
+  if (typingLoader) typingLoader.style.display = "flex";
+  scrollToBottom();
+
+  try {
+    const payload = {
+      message: text,
+      history: chatHistory.slice(-8),
+      analysis_context: lastAnalysisResult ? {
+        diagnóstico_principal: {
+          etiqueta_es: lastAnalysisResult.likely_cause,
+          codigo: lastAnalysisResult.primary_label,
+          confianza_porcentaje: Math.round(lastAnalysisResult.confidence * 100)
+        },
+        gravedad: {
+          nivel: lastAnalysisResult.severity,
+          descripcion: lastAnalysisResult.severity_desc,
+          porcentaje_gravedad: lastAnalysisResult.severity_pct
+        },
+        regla_abcde: lastAnalysisResult.abcde_analysis,
+        derivacion: {
+          prioridad: lastAnalysisResult.urgency,
+          mensaje: lastAnalysisResult.recommendation
+        }
+      } : null
+    };
+
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (typingLoader) typingLoader.style.display = "none";
+
+    if (!res.ok) {
+      appendBotErrorMessage("Lo siento, tuve un pequeño problema al procesar tu consulta. Por favor inténtalo de nuevo.");
+      return;
+    }
+
+    const data = await res.json();
+    chatHistory.push({ sender: "olivia", text: data.reply });
+    appendOliviaChatBubble(data.reply, data.suggested_questions);
+    saveCurrentSessionToBrain();
+
+  } catch (err) {
+    if (typingLoader) typingLoader.style.display = "none";
+    appendBotErrorMessage("Error de conexión con el servicio conversacional de la Dra. Olivia.");
+  }
+}
+
+function appendOliviaChatBubble(replyText, suggestedQuestions) {
+  const botRow = document.createElement("div");
+  botRow.className = "chat-msg-row bot-row";
+
+  const bubbleDiv = document.createElement("div");
+  bubbleDiv.className = "msg-bubble olivia-reply-bubble";
+  bubbleDiv.innerHTML = parseSimpleMarkdown(replyText);
+
+  if (suggestedQuestions && suggestedQuestions.length > 0) {
+    const chipsContainer = document.createElement("div");
+    chipsContainer.className = "quick-chips-container";
+
+    const chipsLabel = document.createElement("span");
+    chipsLabel.className = "chips-label";
+    chipsLabel.textContent = "💡 Sugerencias de consulta:";
+    chipsContainer.appendChild(chipsLabel);
+
+    const chipsWrapper = document.createElement("div");
+    chipsWrapper.className = "chips-wrapper";
+
+    suggestedQuestions.forEach((q) => {
+      const btn = document.createElement("button");
+      btn.className = "chip-btn";
+      btn.type = "button";
+      btn.textContent = q;
+      btn.addEventListener("click", () => {
+        if (chatTextInput) chatTextInput.value = "";
+        handleUserTextMessage(q);
+      });
+      chipsWrapper.appendChild(btn);
+    });
+
+    chipsContainer.appendChild(chipsWrapper);
+    bubbleDiv.appendChild(chipsContainer);
+  }
+
+  botRow.innerHTML = `<div class="msg-avatar"><div class="mini-orb"></div></div>`;
+  botRow.appendChild(bubbleDiv);
+
+  dynamicChatEntries.appendChild(botRow);
+  scrollToBottom();
 }
 
 if (chatForm) {
@@ -157,7 +401,6 @@ if (fileInputHidden) {
 
 if (cameraActionBtn) {
   cameraActionBtn.addEventListener("click", async () => {
-    // Fallback automático para contextos sin WebRTC o HTTP en iOS Safari / Móviles
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       fileInputHidden.click();
       return;
@@ -170,7 +413,6 @@ if (cameraActionBtn) {
       });
       webcamVideo.srcObject = streamWebcam;
     } catch (err) {
-      // Fallback suave al selector nativo del dispositivo (soporta camara en iPad/iPhone)
       closeWebcam();
       fileInputHidden.click();
     }
@@ -232,7 +474,6 @@ async function processSelectedImage(file) {
     const base64DataUrl = e.target.result;
     appendUserImageMessage(base64DataUrl, file.name);
     
-    // Mostrar loader de Olivia
     if (typingLoader) typingLoader.style.display = "flex";
     scrollToBottom();
     
@@ -257,6 +498,23 @@ async function processSelectedImage(file) {
       }
       lastAnalysisResult = data;
       appendBotResultCard(data);
+      saveCurrentSessionToBrain();
+
+      setTimeout(() => {
+        const diagName = data.likely_cause || "tu lesión";
+        appendOliviaChatBubble(
+          `He completado el análisis dermatológico de tu imagen. 😊\n\nHe detectado signos compatibles con **${diagName}**. ` +
+          "Puedes consultar todos los detalles en la tarjeta de arriba o hacerme cualquier pregunta directamente aquí. " +
+          "¿Tienes alguna duda sobre este resultado?",
+          [
+            `¿Qué cuidados debo tener con ${diagName}?`,
+            "¿Por qué es importante la regla ABCDE?",
+            "¿Qué le pregunto a mi dermatólogo?"
+          ]
+        );
+        saveCurrentSessionToBrain();
+      }, 500);
+
     } catch (err) {
       if (typingLoader) typingLoader.style.display = "none";
       appendBotErrorMessage("Error de conexión con el servidor de análisis dermatológico.");
@@ -282,7 +540,6 @@ function appendBotResultCard(data) {
   const text = data.user_report || "";
   const abcde = data.abcde_analysis || {};
 
-  // Estado visual
   let stateVisual = data.primary_label === "sano" ? "SANO / BENIGNO" : "ENFERMO / MALIGNO";
   let stateColorClass = "val-green";
   if (text.includes("SANO / BENIGNO")) {
@@ -296,7 +553,6 @@ function appendBotResultCard(data) {
     stateColorClass = "val-red";
   }
 
-  // Nivel de alerta
   let alertText = "BAJO RIESGO";
   let alertColorClass = "val-green";
   if (text.includes("Nivel de alerta: GRAVE")) {
@@ -310,23 +566,18 @@ function appendBotResultCard(data) {
     alertColorClass = "val-amber";
   }
 
-  // Clasificación
   const matchClass = text.match(/• Clasificación de la lesión:\s*(.+)/);
   const classification = matchClass ? matchClass[1].trim() : (data.benign_malignant === "benigno_probable" ? "Benigna / Normal" : "Maligna probable");
 
-  // Compatibilidad
   const matchCompat = text.match(/• Compatibilidad estimada:\s*(.+)/);
   const compatPct = matchCompat ? matchCompat[1].trim() : `${Math.round(data.risk_score * 100)}%`;
 
-  // Patología más compatible
   const matchPatology = text.match(/• Patología más compatible:\s*(.+)/);
   const patologyName = matchPatology ? matchPatology[1].trim() : data.likely_cause;
 
-  // Descripción y Contexto
   const matchDesc = text.match(/DESCRIPCIÓN Y CONTEXTO\s*\n([\s\S]*?)(?=\n\nEVALUACIÓN VISUAL)/);
   const description = matchDesc ? matchDesc[1].trim() : "";
 
-  // Recomendación
   const matchRec = text.match(/RECOMENDACIÓN Y DERIVACIÓN\s*\n([\s\S]*?)$/);
   const recommendation = matchRec ? matchRec[1].trim() : data.recommendation;
 
@@ -404,7 +655,6 @@ function appendBotResultCard(data) {
           </div>
         </div>
       </div>
-
 
       <div class="section-block" style="border-left-color: ${alertColorClass === 'val-red' ? '#f43f5e' : (alertColorClass === 'val-amber' ? '#f59e0b' : '#10b981')};">
         <div class="section-heading">RECOMENDACIÓN Y DERIVACIÓN</div>

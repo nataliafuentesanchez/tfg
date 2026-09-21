@@ -25,7 +25,14 @@
   - [x] Fallback automático a cámara nativa en iOS/iPadOS sobre conexiones HTTP y activación de entrada de texto
   - [x] Inclusión visual de la fotografía de la lesión enviada por el usuario en el informe clínico PDF descargable
   - [x] Comando conversacional ("quiero abrir un nuevo chat") y botón directo `+ Nuevo Chat` en cabecera
-  - [x] Suite de tests completa validada (13/13 pasando)
+- [x] Fase 8 - Agente Conversacional Inteligente OLIVIA (Google Gemini API)
+  - [x] Especificación de personalidad (médica dermatóloga joven ~30 años, empática, gentil y profesional)
+  - [x] Actualización de especificaciones y arquitectura (`SPECIFICATIONS.md` y `ARCHITECTURE.md`)
+  - [x] Implementación de `app/services/gemini_service.py` con `google-genai` y fallback determínico
+  - [x] Creación de esquemas `ChatMessageRequest` y `ChatMessageResponse` (`app/schemas/chat.py`)
+  - [x] Endpoint backend `POST /chat` en `app/api/routes.py`
+  - [x] Conexión frontend en `app/static/js/app.js` con chips de preguntas sugeridas y conversación abierta fluida
+  - [x] Suite de tests unitarios e integración validada (18/18 pasando)
 
 ## Pendiente
 
@@ -65,10 +72,12 @@
 - [x] Red Neuronal Convolucional (ResNet-18) entrenada, guardada e integrada
 - [x] Triage clínico depurado, plantilla estandarizada y UI modular por tarjetas
 - [x] Flujo de 2 pasos interactivo idéntico al diseño de referencia (Landing con Esfera + Chat con Botones y Descarga PDF)
-- [x] Calibración de gravedad en Melanoma, soporte iOS/iPad, imagen en PDF y nuevo chat (13/13 tests pasando)
+- [x] Calibración de gravedad en Melanoma, soporte iOS/iPad, imagen en PDF y nuevo chat
+- [x] Integración de la API de Google Gemini en Chatbot OLIVIA (Personalidad médica dermatóloga joven ~30 años, conversación libre fluida, chips de sugerencias rápidas y fallback empático - 18/18 tests pasando)
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-09-14 (Día 7 completado)
-- **Estado exacto:** Fase 7 completada. El porcentaje de gravedad en Melanoma refleja el riesgo clínico calibrado (e.g. 85-99%), OLIVIA es 100% funcional en iPad e iPhone tanto por red local (`http://192.168.1.59:8000`) como por cámara nativa, los informes PDF incluyen la foto analizada, se puede iniciar un nuevo chat por texto o botón, y se ha añadido la segmentación por ROI focal (`_extract_focal_crop`) que aísla manchas/lunares en fotos macro. Documentación en `README.md` actualizada y 13/13 tests pasando.
+- **Fecha:** 2026-09-21 (Fase 8 completada)
+- **Estado exacto:** Fase 8 completada. La Dra. Olivia está conectada con la API de Google Gemini (`google-genai`), adopta la personalidad de una médica dermatóloga joven (~30 años) empática y profesional, permite conversación libre sobre cualquier síntoma o consulta médica y explica en detalle los informes de la ResNet-18. Se han añadido sugerencias dinámicas de preguntas (Quick Chips), fallback conversacional si se pierde la conexión y la suite completa de 18 pruebas automatizadas está validada al 100%.
 - **Próximo paso exacto:** Implementar mapas de calor *Grad-CAM* como capa de interpretabilidad visual convolucional sobre la imagen.
+

@@ -5,6 +5,23 @@ This format follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-21
+
+### Added
+- Integrated Google Gemini API (`google-genai`, `gemini-3.6-flash` with model fallback cascade) into Chatbot OLIVIA for fluid conversational interactions.
+- Defined Dr. Olivia's persona: 30-year-old friendly, empathetic, and professional female dermatologist AI.
+- Open conversational dialogue: users can ask about pre-existing skin conditions, precancerous moles, symptoms, preventive tips, or details about the ResNet-18 report.
+- Cerebro & Historial de Olivia: slide-out drawer panel (`historyDrawer`) with `localStorage` session memory to store, browse, and restore past chat conversations.
+- Dynamic Quick Chips (suggested questions) with safe `addEventListener` event binding.
+- Enhanced Markdown parser in `app.js` and CSS styles for spacious, distinct section cards, numbered items, and clear heading typography.
+- Non-dermatoscopic smartphone photo triage in `inference_service.py` based on ROI focal cropping + ABCDE features independent of filename.
+- Added Pydantic schemas in `app/schemas/chat.py` and endpoint `POST /chat` in `app/api/routes.py`.
+- Suite of unit and integration tests for `gemini_service.py` and `POST /chat` (18/18 passing).
+
+### Fixed
+- Fixed footer chat input bar flexbox alignment: action buttons (`Subir`, `Cámara`) placed on left, text input field and send icon properly aligned.
+- Fixed fallback response knowledge engine for precancerous, atypical, and dysplastic mole inquiries.
+
 ## [0.1.2] - 2026-08-31
 
 ### Added
