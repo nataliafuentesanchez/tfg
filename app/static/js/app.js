@@ -54,16 +54,28 @@ function saveCurrentSessionToBrain() {
     const savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
     const existingIdx = savedSessions.findIndex(s => s.id === currentSessionId);
     
-    // Titulo descriptivo basado en el ultimo mensaje o diagnostico
+    // Titulo descriptivo basado en el diagnostico o primer mensaje del usuario
     let sessionTitle = "Consulta dermatológica";
     if (lastAnalysisResult && lastAnalysisResult.likely_cause) {
       sessionTitle = "Análisis: " + lastAnalysisResult.likely_cause;
     } else if (chatHistory.length > 0) {
       const firstUserMsg = chatHistory.find(m => m.sender === "user");
       if (firstUserMsg) {
-        sessionTitle = firstUserMsg.text.length > 30 ? firstUserMsg.text.substring(0, 30) + "..." : firstUserMsg.text;
+        sessionTitle = firstUserMsg.text.length > 35 ? firstUserMsg.text.substring(0, 35) + "..." : firstUserMsg.text;
       }
     }
+
+    // Generar resumen condensado de la sesión para el Cerebro de Olivia
+    const keyMessages = chatHistory
+      .filter(m => m.sender === "user")
+      .slice(-3)
+      .map(m => m.text.length > 80 ? m.text.substring(0, 80) + "..." : m.text);
+
+    const sessionSummary = [
+      sessionTitle,
+      lastAnalysisResult ? `Diagnóstico: ${lastAnalysisResult.likely_cause}, Riesgo: ${Math.round((lastAnalysisResult.risk_score||0)*100)}%` : null,
+      keyMessages.length > 0 ? `Consultas: ${keyMessages.join(" | ")}` : null
+    ].filter(Boolean).join(". ");
 
     const sessionData = {
       id: currentSessionId,
@@ -71,6 +83,7 @@ function saveCurrentSessionToBrain() {
       dateStr: new Date().toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
       chatHistory: chatHistory,
       lastAnalysisResult: lastAnalysisResult,
+      summary: sessionSummary,
       entriesHtml: dynamicChatEntries ? dynamicChatEntries.innerHTML : ""
     };
 
@@ -86,6 +99,26 @@ function saveCurrentSessionToBrain() {
   }
 }
 
+/**
+ * Construye el texto de memoria condensada de las últimas sesiones previas
+ * para inyectarlo en el prompt de Gemini como Cerebro de Olivia.
+ */
+function buildBrainMemorySummary() {
+  try {
+    const savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
+    // Excluir la sesión actual y tomar las 4 más recientes
+    const pastSessions = savedSessions.filter(s => s.id !== currentSessionId).slice(0, 4);
+    if (pastSessions.length === 0) return null;
+
+    const lines = pastSessions.map((s, i) =>
+      `Sesión ${i + 1} (${s.dateStr}): ${s.summary || s.title}`
+    );
+    return lines.join("\n");
+  } catch {
+    return null;
+  }
+}
+
 function loadBrainHistoryList() {
   if (!drawerHistoryList) return;
   drawerHistoryList.innerHTML = "";
@@ -94,19 +127,20 @@ function loadBrainHistoryList() {
     const savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
     
     if (savedSessions.length === 0) {
-      drawerHistoryList.innerHTML = `<div class="drawer-empty-msg">No hay chats anteriores guardados. ¡Empieza a conversar con la Dra. Olivia!</div>`;
+      drawerHistoryList.innerHTML = `<div class="drawer-empty-msg">Aún no hay conversaciones guardadas.<br/>¡Empieza a hablar con la Dra. Olivia!</div>`;
       return;
     }
 
     savedSessions.forEach(session => {
+      const isActive = session.id === currentSessionId;
       const card = document.createElement("div");
-      card.className = "drawer-session-card" + (session.id === currentSessionId ? " active-session" : "");
+      card.className = "drawer-session-card" + (isActive ? " active-session" : "");
       card.innerHTML = `
         <div class="session-card-header">
           <span class="session-card-title">${session.title}</span>
           <span class="session-card-date">${session.dateStr}</span>
         </div>
-        <div class="session-card-preview">${session.chatHistory ? session.chatHistory.length : 0} mensajes guardados</div>
+        <div class="session-card-preview">${session.chatHistory ? session.chatHistory.length : 0} mensajes · ${isActive ? '<strong style="color:#818cf8">Sesión actual</strong>' : 'Pulsa para restaurar'}</div>
       `;
       card.addEventListener("click", () => restoreSessionFromBrain(session.id));
       drawerHistoryList.appendChild(card);
@@ -140,28 +174,50 @@ function restoreSessionFromBrain(sessionId) {
 
 function openDrawer() {
   loadBrainHistoryList();
-  if (historyDrawer) historyDrawer.style.display = "flex";
+  if (historyDrawer) {
+    historyDrawer.style.display = "flex";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        historyDrawer.classList.add("drawer-open");
+      });
+    });
+  }
 }
 
 function closeDrawer() {
-  if (historyDrawer) historyDrawer.style.display = "none";
+  if (historyDrawer) {
+    historyDrawer.classList.remove("drawer-open");
+    setTimeout(() => {
+      if (!historyDrawer.classList.contains("drawer-open")) {
+        historyDrawer.style.display = "none";
+      }
+    }, 310);
+  }
 }
 
-if (openHistoryDrawerBtn) openHistoryDrawerBtn.addEventListener("click", openDrawer);
+function toggleDrawer() {
+  if (historyDrawer && historyDrawer.classList.contains("drawer-open")) {
+    closeDrawer();
+  } else {
+    openDrawer();
+  }
+}
+
+if (openHistoryDrawerBtn) openHistoryDrawerBtn.addEventListener("click", toggleDrawer);
 if (closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
 if (closeDrawerBackdrop) closeDrawerBackdrop.addEventListener("click", closeDrawer);
 
 if (drawerNewChatBtn) {
   drawerNewChatBtn.addEventListener("click", () => {
     closeDrawer();
-    resetChatSession();
+    setTimeout(resetChatSession, 320);
   });
 }
 
 if (drawerHomeBtn) {
   drawerHomeBtn.addEventListener("click", () => {
     closeDrawer();
-    goToLanding();
+    setTimeout(goToLanding, 320);
   });
 }
 
@@ -171,6 +227,9 @@ if (drawerHomeBtn) {
 function goToChat() {
   step1Landing.classList.remove("active");
   step2Chat.classList.add("active");
+  if (dynamicChatEntries && dynamicChatEntries.children.length === 0) {
+    resetChatSession();
+  }
   scrollToBottom();
 }
 
@@ -285,6 +344,7 @@ async function handleUserTextMessage(text) {
     const payload = {
       message: text,
       history: chatHistory.slice(-8),
+      brain_memory: buildBrainMemorySummary(),
       analysis_context: lastAnalysisResult ? {
         "diagnóstico_principal": {
           etiqueta_es: lastAnalysisResult.likely_cause,
@@ -705,3 +765,10 @@ async function triggerPdfDownload() {
   }
 }
 window.triggerPdfDownload = triggerPdfDownload;
+
+// Inicialización de sesión al cargar la página
+document.addEventListener("DOMContentLoaded", () => {
+  if (dynamicChatEntries && dynamicChatEntries.children.length === 0) {
+    resetChatSession();
+  }
+});

@@ -28,7 +28,7 @@ def index() -> str:
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/styles.css?v=2.3" />
+    <link rel="stylesheet" href="/static/css/styles.css?v=2.4" />
   </head>
   <body>
     <div class="app-viewport">
@@ -64,13 +64,12 @@ def index() -> str:
           
           <!-- Chat Header -->
           <header class="chat-header">
-            <div class="chat-header-left" id="openHistoryDrawerBtn" title="Ver Cerebro e Historial de Olivia">
+            <div class="chat-header-left" id="openHistoryDrawerBtn" title="Ver historial de conversaciones">
               <div class="header-avatar">
                 <div class="mini-orb"></div>
               </div>
               <div class="header-meta">
                 <span class="bot-name">OLIVIA AI</span>
-                <span class="brain-badge">🧠 Cerebro & Historial</span>
               </div>
             </div>
             <div class="chat-header-right">
@@ -83,20 +82,6 @@ def index() -> str:
           <!-- Chat Messages Scroll Area -->
           <div class="chat-messages-area" id="chatMessagesArea">
             
-            <!-- Mensaje de bienvenida de Olivia -->
-            <div class="chat-msg-row bot-row">
-              <div class="msg-avatar"><div class="mini-orb"></div></div>
-              <div class="msg-bubble welcome-bubble">
-                <p>✨ <strong>¡Nuevo chat iniciado!</strong> Soy la <strong>Dra. Olivia</strong>, tu médica asistencial de orientación dermatológica.</p>
-                <p style="margin-top: 6px;">Puedes preguntarme cualquier duda sobre tu piel, síntomas o subir una fotografía para analizarla:</p>
-                <ul class="guide-options-list" style="margin-top: 6px;">
-                  <li>• Escribe tus preguntas o dudas médicas directamente abajo.</li>
-                  <li>• Pulsa <strong>📷 Cámara</strong> para tomar una foto en directo.</li>
-                  <li>• Pulsa <strong>📁 Subir</strong> para seleccionar una imagen de tu dispositivo.</li>
-                </ul>
-              </div>
-            </div>
-
             <!-- Contenedor dinámico para respuestas y resultados -->
             <div id="dynamicChatEntries"></div>
 
@@ -162,7 +147,9 @@ def index() -> str:
           <button class="action-btn btn-camera" id="snapPhotoBtn" type="button">📸 Tomar Foto y Analizar</button>
         </div>
       </div>
-    <!-- ================= PANEL LATERAL (CEREBRO / HISTORIAL DE CHATS) ================= -->
+    </div>
+
+    <!-- ================= PANEL LATERAL (HISTORIAL DE CHATS) ================= -->
     <div class="history-drawer" id="historyDrawer" style="display: none;">
       <div class="history-drawer-backdrop" id="closeDrawerBackdrop"></div>
       <div class="history-drawer-content">
@@ -170,8 +157,8 @@ def index() -> str:
           <div class="drawer-title-row">
             <div class="mini-orb"></div>
             <div>
-              <h3 class="drawer-title">🧠 Cerebro de Olivia</h3>
-              <span class="drawer-subtitle">Recopilación de conversaciones y análisis de sesiones previas</span>
+              <h3 class="drawer-title">Conversaciones</h3>
+              <span class="drawer-subtitle">Historial de chats guardados</span>
             </div>
           </div>
           <button class="close-modal-btn" id="closeDrawerBtn">&times;</button>
@@ -182,14 +169,14 @@ def index() -> str:
           <button class="action-btn btn-home-drawer" id="drawerHomeBtn" type="button">⟵ Inicio</button>
         </div>
 
-        <div class="drawer-section-label">📋 SESIONES Y ANALISIS GUARDADOS:</div>
+        <div class="drawer-section-label">📋 SESIONES ANTERIORES:</div>
         <div class="drawer-history-list" id="drawerHistoryList">
           <!-- Sesiones de chat cargadas dinámicamente -->
         </div>
       </div>
     </div>
 
-    <script src="/static/js/app.js?v=2.3"></script>
+    <script src="/static/js/app.js?v=2.5"></script>
   </body>
 </html>
 """
@@ -236,6 +223,7 @@ async def chat_with_olivia(request: ChatMessageRequest) -> ChatMessageResponse:
             user_message=request.message,
             history=history_list,
             analysis_context=request.analysis_context,
+            brain_memory=request.brain_memory,
         )
         return ChatMessageResponse(
             reply=reply_text,

@@ -455,23 +455,46 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
             akiec_prob = probs.get("akiec", 0.0)
 
             # Criterios morfológicos atípicos para fotos de teléfono móvil / cámaras no dermatoscópicas
+            asym_score = abcde_features["asymmetry_score"]
+            border_score = abcde_features["border_score"]
+            color_score = abcde_features["color_score"]
+
             abcde_is_atypical = (
-                abcde_features["asymmetry_score"] >= 0.25
-                or abcde_features["border_score"] >= 0.25
-                or abcde_features["color_score"] >= 0.25
+                asym_score >= 0.20
+                or border_score >= 0.20
+                or color_score >= 0.20
             )
 
+            # Regla de emergencia ABCDE multi-criterio: ≥2 criterios simultáneamente atípicos
+            # Un melanoma real tiene asimetría + policromatismo incluso en fotos no profesionales
+            abcde_high_risk = (
+                (asym_score >= 0.18 and color_score >= 0.18)
+                or (asym_score >= 0.18 and border_score >= 0.20)
+                or (color_score >= 0.22 and border_score >= 0.20)
+            )
+
+            # Penalización: si CNN dice bkl/nv pero ABCDE es claramente atípico en imagen no profesional,
+            # no podemos confiar en la predicción benign de la CNN (dominio shift dermatoscopia→foto)
+            cnn_says_benign = top_dx in ("nv", "bkl", "df", "vasc")
+            if cnn_says_benign and abcde_high_risk:
+                # Sobreescribir predicción benigna de la CNN con nivel de alerta mínimo akiec (premaligno)
+                if mel_prob >= 0.08:
+                    top_dx = "mel"
+                elif mel_prob + bcc_prob + akiec_prob >= 0.35:
+                    top_dx = "akiec" if akiec_prob >= bcc_prob else "bcc"
+
             # Determinación de patología de referencia y triage clínico independiente del nombre del archivo
-            if top_dx == "mel" or mel_prob >= 0.25 or (abcde_is_atypical and mel_prob >= 0.15):
+            if top_dx == "mel" or mel_prob >= 0.12 or (abcde_high_risk and mel_prob >= 0.07):
                 detected_dx = "mel"
-            elif top_dx == "bcc" or bcc_prob >= 0.25:
+            elif top_dx == "bcc" or bcc_prob >= 0.20:
                 detected_dx = "bcc"
-            elif top_dx == "akiec" or akiec_prob >= 0.25:
+            elif top_dx == "akiec" or akiec_prob >= 0.20:
                 detected_dx = "akiec"
-            elif abcde_is_atypical and malignant_risk >= 0.35:
-                detected_dx = "mel" if mel_prob >= 0.10 else ("akiec" if akiec_prob >= bcc_prob else "bcc")
+            elif abcde_is_atypical and malignant_risk >= 0.25:
+                detected_dx = "mel" if mel_prob >= 0.07 else ("akiec" if akiec_prob >= bcc_prob else "bcc")
             else:
                 detected_dx = top_dx
+
 
             info = PATOLOGY_CLINICAL_MATRIX[detected_dx]
 

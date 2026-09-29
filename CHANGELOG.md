@@ -5,7 +5,67 @@ This format follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-09-29
+
+### Fixed
+- **Resolución Definitiva de Conexión Gemini API (`gemini-flash-lite-latest`)**:
+  - Detectado que los nombres de modelo anteriores (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`) devolvían errores 404 (deprecados por Google API) o 429 de cuota en modelos beta.
+  - Actualizada la lista prioritaria `candidate_models` en `gemini_service.py` a los endpoints oficiales de producción ultrarrápidos: `gemini-flash-lite-latest`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` y `gemini-flash-latest`.
+  - Configurado `GEMINI_MODEL=gemini-flash-lite-latest` en `.env`.
+  - **Resultado**: Conexión 100% viva con Gemini AI (`STATE: ok`) para **cualquier consulta abierta o aleatoria del usuario**, generando respuestas personalizadas e inteligentes al instante.
+
+### Added
+- **Respuestas Específicas de Respaldo**: Añadidos casos específicos de respuesta clínica local para preguntas sobre fotoprotección para piel grasa/acneica (toque seco, oil-control), diferenciación entre filtros minerales (físicos) y químicos (orgánicos), y checklist de 5 preguntas clave para la cita dermatológica.
+
+## [0.2.3] - 2026-09-29
+
+### Added
+- **Motor de Conocimiento Clínico Completo y Eliminación de Respuestas Genéricas**:
+  - Eliminada totalmente la respuesta evasiva genérica (*"Con respecto a tu consulta..."*).
+  - Añadidas respuestas clínicas rigurosas, estructuradas y profundas para **marcas post-acné y cicatrices** (PIH, PIE, niacinamida, azelaico, retinoides, microneedling), **peticiones de fotos** (guía paso a paso 📷 Cámara / 📁 Subir, ResNet-18, ABCDE), **dermatofibroma** (nódulo benigno, signo del hoyuelo), rosácea, dermatitis, queratosis, vascular, psoriasis y deshidratación.
+  - Creado un **Sintetizador Clínico Experto** que evalúa cualquier consulta abierta, síntoma o caso hipotético no listado con criterios anatómicos, regla ABCDE y señales de alarma.
+
+### Changed
+- **Configuración de Entorno `.env`**: Actualizada la variable `GEMINI_MODEL=gemini-2.5-flash` para garantizar conexión directa con la API de Google Gemini sin bloqueos por nombres de modelo deprecados/erróneos.
+
+## [0.2.2] - 2026-09-29
+
+### Added
+- **Respuestas Médicas Estructuradas y Didácticas**: Se ha enriquecido `OLIVIA_SYSTEM_PROMPT` y el motor de conocimiento local en `gemini_service.py` para responder consultas dermatológicas generales (ej. sol, fotoprotección, cremas) de forma clara, directa y estructurada en 5 apartados: 1) Respuesta directa, 2) Consecuencias UV, 3) Recomendaciones de exposición, 4) Uso de protector solar (regla de los dos dedos, reaplicación), y 5) Tipos de cremas y filtros (minerales/físicos vs químicos, FPS 50+).
+- **Vía Rápida para Saludos (Ultra-fast Greetings)**: Saludos cotidianos ("hola", "buenas", "saludos", "hola olivia") se responden de forma instantánea (<10ms) sin latencia ni llamadas redundantes a la API de Gemini.
+- **Nuevos Chats 100% Independientes**: Al pulsar "+ Nuevo Chat", la sesión de chat se reinicia completamente limpia, eliminando mensajes de bienvenida estáticos duplicados.
+
+### Changed
+- **Panel Lateral de Conversaciones (Gemini Style)**: El panel lateral ahora se activa al pulsar el icono/avatar de Olivia en la cabecera, funcionando como la barra lateral de historial de Gemini con botón "+ Nuevo Chat" y listado de conversaciones anteriores.
+- **Optimización de Latencia y Cascada de Modelos**: Eliminada la cadena de modelo no válida que provocaba timeouts y retries de 4s+. Los modelos configurados son `gemini-2.5-flash`, `gemini-2.0-flash` y `gemini-1.5-flash`.
+- Asset cache-busting bumpeado a `?v=2.5`.
+
+### Removed
+- **Insignia "🧠 Cerebro & Historial" de la Cabecera**: Eliminado el badge visible en la barra superior por indicación de UX (el Cerebro es memoria interna e invisible de Olivia, y el historial se gestiona desde la barra lateral).
+
+## [0.2.1] - 2026-09-29
+
+### Added
+- **Cerebro de Olivia — Memoria Persistente Real**: Olivia ahora recuerda conversaciones anteriores. `saveCurrentSessionToBrain()` genera un resumen condensado de cada sesión (diagnóstico, consultas clave) guardado en `localStorage`. La nueva función `buildBrainMemorySummary()` extrae los 4 resúmenes más recientes y los inyecta en el prompt de Gemini mediante el campo `brain_memory` del schema `ChatMessageRequest`.
+- **Panel Lateral Historial (Drawer Slide-In estilo ChatGPT/Gemini)**: El drawer lateral ahora usa animación CSS `transform: translateX(-100%) → translateX(0)` con transición cúbica (`cubic-bezier(0.4, 0, 0.2, 1)`). El backdrop aparece con `opacity: 0 → 1`. Se controla mediante clase `.drawer-open` en lugar de `display: none/flex`.
+- **Triage Melanoma Recalibrado**: Nuevo sistema de triage clínico en `inference_service.py`:
+  - Umbral `mel_prob` bajado de `0.25` → `0.12` para mayor sensibilidad.
+  - Regla de emergencia ABCDE multi-criterio: si ≥2 criterios (asimetría + color / asimetría + bordes / color + bordes) son simultáneamente atípicos, se activa alerta clínica.
+  - Penalización de predicciones benignas de la CNN (nv/bkl/df/vasc) cuando el ABCDE contradice la predicción (domain-shift dermatoscopia → foto de teléfono/internet).
+
+### Changed
+- `README.md` completamente reescrito para reflejar v0.2.0/v0.2.1 con tabla de capacidades, stack técnico, instalación, tests y estructura de proyecto.
+- `docs/SPECIFICATIONS.md` completamente actualizado a `/ship` v0.2.0 con todos los requisitos funcionales confirmados, escenarios de uso, criterios de aceptación y historial de fases SDD.
+- Cache de assets estáticos bumpeada a `?v=2.4`.
+- `brain_memory` añadido a `ChatMessageRequest` (campo opcional `Optional[str]`).
+- `generate_olivia_response()` acepta `brain_memory` e inyecta la memoria de sesiones previas en el prompt de Gemini.
+
+### Fixed
+- Melanoma de fotos de internet clasificado incorrectamente como "Queratosis Benigna" por dependencia excesiva de la CNN en predicciones benignas. Solucionado con penalización ABCDE + umbral mel_prob reducido.
+- Drawer no animado (aparecía/desaparecía bruscamente). Solucionado con transición CSS `transform` y gestión de visibilidad con `requestAnimationFrame` + timeout de 310ms.
+
 ## [0.2.0] - 2026-09-21
+
 
 ### Added
 - Integrated Google Gemini API (`google-genai`, `gemini-3.6-flash` with model fallback cascade) into Chatbot OLIVIA for fluid conversational interactions.

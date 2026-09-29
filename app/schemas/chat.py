@@ -22,6 +22,10 @@ class ChatMessageRequest(BaseModel):
     analysis_context: Optional[Dict[str, Any]] = Field(
         default=None, description="Contexto estructurado del informe dermatológico de ResNet-18"
     )
+    brain_memory: Optional[str] = Field(
+        default=None,
+        description="Resumen condensado de sesiones anteriores — Cerebro persistente de Olivia"
+    )
 
 
 class ChatMessageResponse(BaseModel):
