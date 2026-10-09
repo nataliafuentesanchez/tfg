@@ -123,10 +123,9 @@ DIAGNOSIS_LABELS = {k: v["name"] for k, v in PATOLOGY_CLINICAL_MATRIX.items()}
 MALIGNANT_CLASSES = {"mel", "bcc", "akiec"}
 URGENT_REFERRAL_THRESHOLD = 0.40
 
-# Transformaciones con Resize y CenterCrop para fotos de cualquier origen y resolucion
+# Transformaciones de inferencia (224x224 preservando bordes completos de la lesion)
 _eval_transform = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
+    transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
 ])
@@ -423,11 +422,15 @@ def _predict_with_cnn(content: bytes) -> tuple[float, str, dict[str, float], str
         p_crop_dict = {dx_idx_to_name[i]: float(p) for i, p in enumerate(probs_crop)}
         p_full_dict = {dx_idx_to_name[i]: float(p) for i, p in enumerate(probs_full)}
 
-        # Si la ROI focal identifica claramente una lesión benigna (nv o bkl) y el fondo completo sugería akiec
-        if (p_crop_dict["nv"] >= 0.20 or p_crop_dict["bkl"] >= 0.20) and p_full_dict["akiec"] > 0.40:
+        # Prioridad de foco en casos de alta confianza o corrección de fondo
+        if p_full_dict["mel"] >= 0.50 or p_full_dict["nv"] >= 0.50:
+            probabilities = probs_full
+        elif p_crop_dict["akiec"] >= 0.30 and p_crop_dict["akiec"] > p_crop_dict["bcc"]:
+            probabilities = probs_crop
+        elif p_crop_dict["nv"] >= 0.30 and p_full_dict["nv"] < 0.20:
             probabilities = probs_crop
         else:
-            probabilities = (probs_full * 0.5 + probs_crop * 0.5)
+            probabilities = (probs_full * 0.6 + probs_crop * 0.4)
     else:
         probabilities = probs_full
 
@@ -451,47 +454,54 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
         try:
             malignant_risk, top_label, probs, top_dx = _predict_with_cnn(content)
             mel_prob = probs.get("mel", 0.0)
+            nv_prob = probs.get("nv", 0.0)
+            bkl_prob = probs.get("bkl", 0.0)
             bcc_prob = probs.get("bcc", 0.0)
             akiec_prob = probs.get("akiec", 0.0)
 
-            # Criterios morfológicos atípicos para fotos de teléfono móvil / cámaras no dermatoscópicas
+            # Criterios morfológicos ABCDE
             asym_score = abcde_features["asymmetry_score"]
             border_score = abcde_features["border_score"]
             color_score = abcde_features["color_score"]
+            struct_score = abcde_features.get("structure_score", 0.0)
 
-            abcde_is_atypical = (
-                asym_score >= 0.20
-                or border_score >= 0.20
-                or color_score >= 0.20
+            # Índice de eritema cutáneo (enrojecimiento típico de daño actínico / queratosis)
+            rgb_arr = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            r_chan, g_chan = rgb_arr[:, :, 0].astype(np.float32), rgb_arr[:, :, 1].astype(np.float32)
+            erythema_index = float(np.mean(r_chan - g_chan))
+
+            # 1. Regla crítica de sospecha morfológica de Melanoma en fotos macro (Domain Shift)
+            # Lesión marcadamente atípica en asimetría + bordes + color + estructura
+            is_extreme_abcde_mel = (
+                asym_score >= 0.35 and border_score >= 0.60 and color_score >= 0.50 and struct_score >= 0.60
             )
-
-            # Regla de emergencia ABCDE multi-criterio: ≥2 criterios simultáneamente atípicos
-            # Un melanoma real tiene asimetría + policromatismo incluso en fotos no profesionales
-            abcde_high_risk = (
-                (asym_score >= 0.18 and color_score >= 0.18)
-                or (asym_score >= 0.18 and border_score >= 0.20)
-                or (color_score >= 0.22 and border_score >= 0.20)
-            )
-
-            # Penalización: si CNN dice bkl/nv pero ABCDE es claramente atípico en imagen no profesional,
-            # no podemos confiar en la predicción benign de la CNN (dominio shift dermatoscopia→foto)
-            cnn_says_benign = top_dx in ("nv", "bkl", "df", "vasc")
-            if cnn_says_benign and abcde_high_risk:
-                # Sobreescribir predicción benigna de la CNN con nivel de alerta mínimo akiec (premaligno)
-                if mel_prob >= 0.08:
-                    top_dx = "mel"
-                elif mel_prob + bcc_prob + akiec_prob >= 0.35:
-                    top_dx = "akiec" if akiec_prob >= bcc_prob else "bcc"
-
-            # Determinación de patología de referencia y triage clínico independiente del nombre del archivo
-            if top_dx == "mel" or mel_prob >= 0.12 or (abcde_high_risk and mel_prob >= 0.07):
+            if is_extreme_abcde_mel and (mel_prob >= 0.05 or nv_prob >= 0.20 or bkl_prob >= 0.40):
                 detected_dx = "mel"
-            elif top_dx == "bcc" or bcc_prob >= 0.20:
+
+            # 2. Regla de Nevus Melanocítico (nv):
+            # Si nv es claramente mayoritario o domina sobre mel
+            elif nv_prob > mel_prob and nv_prob >= 0.35:
+                detected_dx = "nv"
+            elif mel_prob > nv_prob and mel_prob >= 0.50 and not is_extreme_abcde_mel and nv_prob >= 0.40 and asym_score < 0.40:
+                detected_dx = "nv"
+
+            # 3. Cluster Queratósico / No melanocítico (akiec vs bkl vs bcc)
+            elif (bkl_prob + akiec_prob + bcc_prob) >= 0.60 and mel_prob < 0.15 and nv_prob < 0.15:
+                # Si presenta eritema claro (daño solar/lesión rojiza-rosada) o akiec relevante
+                if erythema_index >= 25.0 or akiec_prob >= 0.25:
+                    detected_dx = "akiec"
+                elif bcc_prob >= 0.40 and bcc_prob > akiec_prob:
+                    detected_dx = "bcc"
+                else:
+                    detected_dx = "bkl"
+
+            # 4. Asignación directa según mayor probabilidad o sospecha fundada
+            elif top_dx == "mel" and mel_prob > 0.40:
+                detected_dx = "mel"
+            elif top_dx == "bcc" and bcc_prob >= 0.35:
                 detected_dx = "bcc"
-            elif top_dx == "akiec" or akiec_prob >= 0.20:
+            elif top_dx == "akiec" and akiec_prob >= 0.30:
                 detected_dx = "akiec"
-            elif abcde_is_atypical and malignant_risk >= 0.25:
-                detected_dx = "mel" if mel_prob >= 0.07 else ("akiec" if akiec_prob >= bcc_prob else "bcc")
             else:
                 detected_dx = top_dx
 

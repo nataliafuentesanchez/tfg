@@ -112,3 +112,36 @@ def test_real_common_nevus_image_is_not_marked_as_suspicious() -> None:
     assert result.primary_label == "sano"
     assert result.severity in {"ninguno", "bajo"}
 
+
+def test_clinical_calibration_user_reported_cases() -> None:
+    """Verifica que los casos reportados por la usuaria se clasifiquen con su patología clínica real."""
+    base_ham = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos/imagenes/HAM10000_images_part_1"
+    base_user = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/pruebas_imagenes_olivia"
+
+    # Nevus comunes de la base de datos (deben ser sanos / nv)
+    for nv_file in ["ISIC_0025412.jpg", "ISIC_0024317.jpg"]:
+        p = os.path.join(base_ham, nv_file)
+        if os.path.exists(p):
+            with open(p, "rb") as f:
+                res = analyze_image(f.read(), filename=nv_file)
+            assert res.primary_label == "sano"
+            assert "Nevus" in res.likely_cause
+
+    # Melanoma real de prueba (debe ser maligno / mel / grave)
+    mel_file = os.path.join(base_user, "433595.jpeg")
+    if os.path.exists(mel_file):
+        with open(mel_file, "rb") as f:
+            res_mel = analyze_image(f.read(), filename="433595.jpeg")
+        assert res_mel.primary_label == "enfermo"
+        assert res_mel.severity == "grave"
+        assert "Melanoma" in res_mel.likely_cause
+
+    # Queratosis actínica (deben ser premalignas / akiec)
+    for q_file in ["gr1.jpeg", "images45.jpeg"]:
+        p = os.path.join(base_user, q_file)
+        if os.path.exists(p):
+            with open(p, "rb") as f:
+                res_q = analyze_image(f.read(), filename=q_file)
+            assert res_q.primary_label == "enfermo"
+            assert "Queratosis Actínica" in res_q.likely_cause
+

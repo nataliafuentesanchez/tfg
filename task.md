@@ -67,14 +67,19 @@
   - [x] Verificado con script directo: `STATE: ok` (Conexión 100% viva con Gemini AI respondiendo en directo a cualquier consulta libre del usuario).
   - [x] Cobertura adicional para piel grasa (toque seco/oil control), filtros minerales vs químicos y lista de 5 preguntas para el dermatólogo.
   - [x] Documentación en `CHANGELOG.md` (v0.2.4), `diario_codigo.md` (Día 10 parte 3) y `task.md`.
-  - [x] Suite de 18/18 tests pasando al 100%.
+- [x] Fase 13 - Calibración Diagnóstica y Triage Dermatológico Multi-Patología (v0.2.5)
+  - [x] Corrección de distorsión en inferencia: reemplazo de `Resize(256) + CenterCrop(224)` por `Resize((224, 224))` (alineado con `train_cnn.py`), evitando mutilación de bordes y falsos melanomas en nevus de HAM10000 (`ISIC_0025412`, `ISIC_0024317`).
+  - [x] Eliminación de sobreescritura forzada de melanoma (`mel_prob >= 0.12`) que causaba falsos positivos masivos sobre lunares benignos.
+  - [x] Detección de Melanoma en fotos de cámara/teléfono móvil con domain shift (`433595.jpeg`) mediante regla de discordancia morfológica crítica ABCDE (Asimetría ≥ 0.35, Bordes ≥ 0.60, Color ≥ 0.50, Estructura ≥ 0.60).
+  - [x] Resolución de confusión Queratosis Actínica (`akiec`) vs Carcinoma Basocelular (`bcc`) / Queratosis Benigna (`bkl`) (`gr1.jpeg`, `images45.jpeg`) mediante índice de eritema cutáneo e inferencia focal ponderada.
+  - [x] Suite ampliada y validada: 19/19 tests pasando al 100%.
 
 ## Context Snapshot
 
-- **Versión Actual:** `v0.2.4` (OLIVIA AI - TFG UMA)
-- **Servidor Activo:** Uvicorn en `http://127.0.0.1:8000/` (Tarea daemon `task-475`)
-- **Estado de Tests:** 18/18 pasando (100% pass)
-- **Últimos Cambios:** Conexión en vivo 100% activa con el endpoint oficial `gemini-flash-lite-latest` (`STATE: ok`), resolviendo cualquier pregunta libre de dermatología al instante.
+- **Versión Actual:** `v0.2.5` (OLIVIA AI - TFG UMA)
+- **Servidor Activo:** Uvicorn en `http://127.0.0.1:8000/` con `--reload` activo (Tarea daemon `task-227`)
+- **Estado de Tests:** 19/19 pasando (100% pass)
+- **Últimos Cambios:** Resuelto el falso positivo de melanoma en nevus (`ISIC_0025412`, `ISIC_0024317`), la detección de melanoma con domain shift macro (`433595.jpeg`) y la categorización correcta de queratosis actínica (`gr1.jpeg`, `images45.jpeg`). Documentación /ship completada: `README.md` (v0.2.5, 19/19 tests, nuevo modelo Gemini), `CHANGELOG.md` (entrada v0.2.5), `diario_codigo.md` (Día 11 completo con resumen y tabla de docs).
 
 ## Pendiente
 
@@ -120,6 +125,6 @@
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-09-29 (Fase 9 completada — v0.2.1)
-- **Estado exacto:** v0.2.1 operativa. El Cerebro de Olivia es ahora memoria real inyectada en el prompt de Gemini. El drawer tiene animación slide-in estilo ChatGPT. El triage de melanoma usa triple capa de seguridad clínica (umbral mel_prob 0.12, emergencia ABCDE multi-criterio, penalización domain-shift). README, SPECIFICATIONS, CHANGELOG y diario_codigo actualizados. 18/18 tests pasando.
-- **Próximo paso:** Implementar Grad-CAM para mapas de atención visual (interpretabilidad convolucional) o iniciar la fase de escritura de la memoria del TFG.
+- **Fecha:** 2026-10-09 (Fase 13 completada — v0.2.5)
+- **Estado exacto:** v0.2.5 operativa. Se han resuelto los 5 falsos positivos/negativos clínicos reportados (2x nv clasificado como mel, 1x akiec como mel, 1x mel como bkl, 1x akiec como bcc). Solución basada en: (1) alineación de transformación `Resize((224,224))` con el entrenamiento, (2) eliminación del umbral `mel_prob >= 0.12`, (3) regla de sospecha morfológica ABCDE para domain-shift, (4) índice de eritema cutáneo para akiec. Suite de tests ampliada a 19/19 (100%). Documentación /ship completa: README v0.2.5, CHANGELOG v0.2.5, diario_codigo.md Día 11 con resumen y tabla.
+- **Próximo paso:** Implementar Grad-CAM para mapas de atención visual (interpretabilidad convolucional) o iniciar la fase de escritura de la memoria del TFG. Considerar también la publicación en GitHub (falta autenticación local).

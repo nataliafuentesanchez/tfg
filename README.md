@@ -1,6 +1,6 @@
 # OLIVIA AI — Orientación Dermatológica Asistida por Inteligencia Artificial
 
-> **Versión:** v0.2.0 · **TFG Ingeniería de la Salud** · Universidad de Málaga (UMA)  
+> **Versión:** v0.2.5 · **TFG Ingeniería de la Salud** · Universidad de Málaga (UMA)  
 > **Autora:** Natalia Fuentes Sánchez · **Metodología:** Spec-Driven Development (SDD)
 
 ---
@@ -15,11 +15,12 @@ La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empátic
 
 ---
 
-## Capacidades principales (v0.2.0)
+## Capacidades principales (v0.2.5)
 
 | Capacidad | Descripción |
 |---|---|
-| 🧠 **Chatbot Olivia + Gemini API** | Conversación abierta sobre cualquier síntoma, lesión o duda dermatológica con la Dra. Olivia (Google Gemini `gemini-3.6-flash` + fallback empático) |
+| 🧠 **Chatbot Olivia + Gemini API** | Conversación abierta sobre cualquier síntoma, lesión o duda dermatológica con la Dra. Olivia (Google Gemini `gemini-flash-lite-latest` + fallback empático) |
+| 🎯 **Calibración Diagnóstica Multi-Patología** | Transformación `Resize((224,224))` alineada con entrenamiento, eliminación de falsos positivos de melanoma en nevus, regla de sospecha morfológica ABCDE para domain-shift, diferenciación akiec/bcc por índice de eritema |
 | 🔬 **Análisis Visual ResNet-18** | Clasificación de 7 patologías dermatológicas (Melanoma, BCC, AKIEC, BKL, NV, VASC, DF) con criterios ABCDE |
 | 📋 **Informe PDF Clínico** | Generación y descarga de informe clínico completo con imagen de la lesión, diagnóstico ABCDE y recomendación de derivación |
 | 🧠 **Cerebro de Olivia** | Memoria persistente cross-session: Olivia recuerda conversaciones anteriores y las usa para personalizar la interacción |
@@ -35,10 +36,10 @@ La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empátic
 |---|---|
 | **Backend** | Python 3.11+ · FastAPI · Uvicorn |
 | **Visión por Computador** | PyTorch · ResNet-18 · OpenCV · NumPy |
-| **LLM / Chatbot** | Google Gemini API (`google-genai`) · `gemini-3.6-flash` |
+| **LLM / Chatbot** | Google Gemini API (`google-genai`) · `gemini-flash-lite-latest` |
 | **Informe PDF** | ReportLab |
 | **Frontend** | HTML5 · Vanilla CSS · JavaScript (ESM) |
-| **Tests** | Pytest · 18 tests (unit + integration) |
+| **Tests** | Pytest · 19 tests (unit + integration) |
 | **Variables de entorno** | `python-dotenv` |
 
 ---
@@ -63,7 +64,7 @@ Crea un archivo `.env` en la raíz del proyecto:
 
 ```env
 GEMINI_API_KEY=tu_clave_aqui
-GEMINI_MODEL=gemini-3.6-flash
+GEMINI_MODEL=gemini-flash-lite-latest
 ```
 
 ### 3. Iniciar la aplicación
@@ -107,14 +108,14 @@ stop.cmd
 PYTHONPATH=. venv/bin/pytest -v
 ```
 
-**Estado actual:** `18/18 tests pasando ✅`
+**Estado actual:** `19/19 tests pasando ✅`
 
 ```
 tests/integration/test_chat_endpoint.py    ✅✅
 tests/integration/test_health_endpoint.py  ✅
 tests/unit/test_dataset_service.py         ✅✅✅
 tests/unit/test_gemini_service.py          ✅✅✅
-tests/unit/test_inference_service.py       ✅✅✅✅✅✅✅
+tests/unit/test_inference_service.py       ✅✅✅✅✅✅✅✅
 tests/unit/test_pdf_service.py             ✅✅
 ```
 
@@ -174,7 +175,7 @@ tests/unit/test_pdf_service.py             ✅✅
 | [`docs/SPECIFICATIONS.md`](docs/SPECIFICATIONS.md) | Especificaciones funcionales y criterios de aceptación |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Stack técnico y decisiones de arquitectura |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Sistema de diseño visual y tokens |
-| [`docs/diario_codigo.md`](docs/diario_codigo.md) | Diario de desarrollo técnico (8 días) |
+| [`docs/diario_codigo.md`](docs/diario_codigo.md) | Diario de desarrollo técnico (11 días) |
 | [`CHANGELOG.md`](CHANGELOG.md) | Historial de versiones |
 | [`task.md`](task.md) | Estado actual de tareas SDD |
 | [`memory.md`](memory.md) | ADRs, lecciones aprendidas, contexto activo |

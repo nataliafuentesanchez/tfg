@@ -5,6 +5,18 @@ This format follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-10-09
+
+### Fixed
+- **Resolución de Falsos Positivos de Melanoma en Nevus Comunes (`ISIC_0025412`, `ISIC_0024317`)**:
+  - Detectado que la transformación `Resize(256) + CenterCrop(224)` en el servicio de inferencia amputaba los bordes benignos de las lesiones de HAM10000 (el modelo fue entrenado con `Resize((224, 224))`). Actualizada la transformación a `Resize((224, 224))` directo.
+  - Eliminada la regla arbitraria previa `mel_prob >= 0.12` que forzaba el diagnóstico de Melanoma sobre lunares benignos con alta probabilidad de `nv` (e.g. 71-87%).
+- **Detección de Melanoma Real con Desplazamiento de Dominio Macro (`433595.jpeg`)**:
+  - Implementada regla de seguridad por discordancia morfológica ABCDE crítica: si una lesión fuertemente pigmentada presenta asimetría marcada (≥ 0.35), bordes extremos (≥ 0.60), policromatismo (≥ 0.50) y estructura compleja (≥ 0.60), se clasifica como Melanoma independientemente de si la CNN (entrenada solo con dermatoscopia) atenúa su predicción en fotos convencionales de teléfono móvil.
+- **Diferenciación de Queratosis Actínica (`akiec`) vs Carcinomas (`bcc`) y Queratosis Benignas (`bkl`) (`gr1.jpeg`, `images45.jpeg`)**:
+  - Introducido análisis de índice de eritema cutáneo y ponderación focal de la lesión, permitiendo identificar correctamente las lesiones eritemato-descamativas inducidas por daño solar como Queratosis Actínica (Premaligna / Leve-Moderado).
+- **Suite de Pruebas Unitarias**: Añadida batería de pruebas de regresión clínica directa para los 5 casos reportados; suite ampliada a 19/19 tests pasando al 100%.
+
 ## [0.2.4] - 2026-09-29
 
 ### Fixed
