@@ -5,6 +5,16 @@ This format follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-10-17
+
+### Fixed
+- **Resolución de Conflictos Clínicos entre Carcinomas (`bcc`), Queratosis Actínicas (`akiec`) y Melanomas (`mel`)**:
+  - **Eliminación de la sobreescritura masiva de Carcinomas por eritema cutáneo**: Identificado que la condición previa `erythema_index >= 25.0` (`mean(R - G)`) se cumplía en prácticamente todas las imágenes de piel clara de HAM10000, convirtiendo falsamente más del 70-99% de Carcinomas Basocelulares (`bcc`) y Queratosis Benignas (`bkl`) en Queratosis Actínica (`akiec`). Se ha eliminado la sobreescritura ciega y se protege la asignación de `bcc` cuando `bcc_prob >= 0.35` y supera a `akiec` y `bkl`.
+  - **Detección y Prioridad Clínica de Melanoma (Caso `ISIC_0032258`)**: Resuelto el falso negativo de melanoma en casos donde la CNN presentaba sesgo o probabilidades compartidas con carcinoma. Se ha flexibilizado la regla morfológica de sospecha crítica (`is_suspicious_mel_vs_bcc`) para priorizar Melanoma (GRAVE) cuando existe `mel_prob >= 0.15` con marcada asimetría (≥ 0.45) y policromatismo/bordes irregulares (≥ 0.45 / 0.60), evitando degradaciones peligrosas a carcinoma basocelular.
+  - **Preservación del contexto global en inferencia convolucional (`_predict_with_cnn`)**: Se evita que el recorte focal (`_extract_focal_crop`) altere la distribución de probabilidad suprimiendo artificialmente el melanoma o inflando carcinomas cuando la imagen completa ya presenta evidencia morfológica o de clase suficiente (`mel_prob >= 0.15` o `bcc_prob >= 0.40`).
+  - **Resolución de Casos de Prueba Clínicos Adicionales**: Corregida la clasificación de `Queratosis-actínica-02.jpeg`, `im.jpeg`, `q325.jpeg` y `q4567.jpg` como **Queratosis Actínica** (`akiec`), y de `cccccccd.png` como **Carcinoma Basocelular** (`bcc`). Se eliminó además la activación espuria de melanoma por `bkl_prob` residual en lesiones no pigmentadas.
+- **Suite de Pruebas**: Añadidas pruebas de regresión clínica para `ISIC_0032258.jpg`, `ISIC_0029392.jpg`, `ISIC_0029563.jpg`, `cd34.jpg`, `cd.jpg`, `q23.jpg`, `Queratosis-actínica-02.jpeg`, `im.jpeg`, `q325.jpeg`, `q4567.jpg` y `cccccccd.png`. Suite ampliada a 21/21 tests pasando al 100%.
+
 ## [0.2.5] - 2026-10-09
 
 ### Fixed

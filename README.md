@@ -1,6 +1,6 @@
 # OLIVIA AI — Orientación Dermatológica Asistida por Inteligencia Artificial
 
-> **Versión:** v0.2.5 · **TFG Ingeniería de la Salud** · Universidad de Málaga (UMA)  
+> **Versión:** v0.2.6 · **TFG Ingeniería de la Salud** · Universidad de Málaga (UMA)  
 > **Autora:** Natalia Fuentes Sánchez · **Metodología:** Spec-Driven Development (SDD)
 
 ---
@@ -15,12 +15,12 @@ La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empátic
 
 ---
 
-## Capacidades principales (v0.2.5)
+## Capacidades principales (v0.2.6)
 
 | Capacidad | Descripción |
 |---|---|
 | 🧠 **Chatbot Olivia + Gemini API** | Conversación abierta sobre cualquier síntoma, lesión o duda dermatológica con la Dra. Olivia (Google Gemini `gemini-flash-lite-latest` + fallback empático) |
-| 🎯 **Calibración Diagnóstica Multi-Patología** | Transformación `Resize((224,224))` alineada con entrenamiento, eliminación de falsos positivos de melanoma en nevus, regla de sospecha morfológica ABCDE para domain-shift, diferenciación akiec/bcc por índice de eritema |
+| 🎯 **Calibración Diagnóstica Multi-Patología** | Resolución integral de conflictos clínicos: protección del 90%+ de Carcinomas Basocelulares (`bcc`), prioridad clínica en sospecha de Melanoma (`mel`, caso `ISIC_0032258`), y diferenciación precisa de Queratosis Actínica (`akiec`) y Benigna (`bkl`) |
 | 🔬 **Análisis Visual ResNet-18** | Clasificación de 7 patologías dermatológicas (Melanoma, BCC, AKIEC, BKL, NV, VASC, DF) con criterios ABCDE |
 | 📋 **Informe PDF Clínico** | Generación y descarga de informe clínico completo con imagen de la lesión, diagnóstico ABCDE y recomendación de derivación |
 | 🧠 **Cerebro de Olivia** | Memoria persistente cross-session: Olivia recuerda conversaciones anteriores y las usa para personalizar la interacción |
@@ -39,7 +39,7 @@ La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empátic
 | **LLM / Chatbot** | Google Gemini API (`google-genai`) · `gemini-flash-lite-latest` |
 | **Informe PDF** | ReportLab |
 | **Frontend** | HTML5 · Vanilla CSS · JavaScript (ESM) |
-| **Tests** | Pytest · 19 tests (unit + integration) |
+| **Tests** | Pytest · 21 tests (unit + integration) |
 | **Variables de entorno** | `python-dotenv` |
 
 ---

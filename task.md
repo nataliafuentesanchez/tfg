@@ -74,12 +74,21 @@
   - [x] Resolución de confusión Queratosis Actínica (`akiec`) vs Carcinoma Basocelular (`bcc`) / Queratosis Benigna (`bkl`) (`gr1.jpeg`, `images45.jpeg`) mediante índice de eritema cutáneo e inferencia focal ponderada.
   - [x] Suite ampliada y validada: 19/19 tests pasando al 100%.
 
+- [x] Fase 14 - Calibración y Resolución de Conflictos Clínicos: Carcinoma Basocelular (bcc), Queratosis Actínica (akiec) y Melanoma (mel) (v0.2.6)
+  - [x] Diagnóstico de causa raíz: sobreescritura masiva de Carcinomas y Queratosis Benignas a Queratosis Actínica por regla de eritema cutáneo global.
+  - [x] Diagnóstico de degradación de Melanomas a Carcinoma (e.g. `ISIC_0032258.jpg`) por severidad restrictiva de ABCDE y supresión artificial por recorte focal.
+  - [x] Implementación de preservación de contexto global en `_predict_with_cnn` cuando `mel_prob >= 0.15` o `bcc_prob >= 0.40`.
+  - [x] Regla de prioridad de sospecha de Melanoma (`is_suspicious_mel_vs_bcc`) ante asimetría y policromatismo marcados con probabilidad significativa.
+  - [x] Protección integral de Carcinoma Basocelular frente a Queratosis Actínica cuando `bcc_prob >= 0.35`.
+  - [x] Resolución de lote adicional de pruebas (`Queratosis-actínica-02.jpeg`, `im.jpeg`, `q325.jpeg`, `q4567.jpg` como `akiec`, y `cccccccd.png` como `bcc`).
+  - [x] Suite de pruebas de regresión clínica ampliada y validación al 100% (21/21 tests pasando).
+
 ## Context Snapshot
 
-- **Versión Actual:** `v0.2.5` (OLIVIA AI - TFG UMA)
-- **Servidor Activo:** Uvicorn en `http://127.0.0.1:8000/` con `--reload` activo (Tarea daemon `task-227`)
-- **Estado de Tests:** 19/19 pasando (100% pass)
-- **Últimos Cambios:** Resuelto el falso positivo de melanoma en nevus (`ISIC_0025412`, `ISIC_0024317`), la detección de melanoma con domain shift macro (`433595.jpeg`) y la categorización correcta de queratosis actínica (`gr1.jpeg`, `images45.jpeg`). Documentación /ship completada: `README.md` (v0.2.5, 19/19 tests, nuevo modelo Gemini), `CHANGELOG.md` (entrada v0.2.5), `diario_codigo.md` (Día 11 completo con resumen y tabla de docs).
+- **Versión Actual:** `v0.2.6` (OLIVIA AI - TFG UMA)
+- **Servidor Activo:** Uvicorn en `http://127.0.0.1:8000/` con `--reload` activo
+- **Estado de Tests:** 21/21 pasando (100% pass)
+- **Últimos Cambios:** Resolución completa de la confusión diagnóstica entre Carcinoma Basocelular (`bcc`), Queratosis Actínica (`akiec`) y Melanoma (`mel`). Resuelto el caso reportado `ISIC_0032258.jpg` (Melanoma confirmado, clasificado ahora correctamente como Melanoma GRAVE), protección de Carcinomas (`ISIC_0029392.jpg`, `cd34.jpg`, `cd.jpg`, `q23.jpg`, `cccccccd.png`), y preservación de Queratosis Actínica (`ISIC_0029563.jpg`, `gr1.jpeg`, `images45.jpeg`, `Queratosis-actínica-02.jpeg`, `im.jpeg`, `q325.jpeg`, `q4567.jpg`). Suite ampliada a 21/21 tests pasando.
 
 ## Pendiente
 

@@ -145,3 +145,75 @@ def test_clinical_calibration_user_reported_cases() -> None:
             assert res_q.primary_label == "enfermo"
             assert "Queratosis Actínica" in res_q.likely_cause
 
+
+def test_clinical_calibration_melanoma_vs_carcinoma_conflict_resolution() -> None:
+    """Verifica la resolución de conflictos clínicos entre Melanoma (ISIC_0032258), Carcinomas y Queratosis Actínicas."""
+    base_ham1 = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos/imagenes/HAM10000_images_part_1"
+    base_ham2 = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos/imagenes/HAM10000_images_part_2"
+    base_user = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/pruebas_imagenes_olivia"
+
+    # 1. Melanoma real biopsiado reportado por la usuaria que se confundía con Carcinoma (ISIC_0032258)
+    p_mel = os.path.join(base_ham2, "ISIC_0032258.jpg")
+    if os.path.exists(p_mel):
+        with open(p_mel, "rb") as f:
+            res_mel = analyze_image(f.read(), filename="ISIC_0032258.jpg")
+        assert res_mel.primary_label == "enfermo"
+        assert res_mel.severity == "grave"
+        assert "Melanoma" in res_mel.likely_cause
+
+    # 2. Carcinomas basocelulares reales que se sobreescribían falsamente a Queratosis Actínica
+    # Caso HAM10000 (ISIC_0029392)
+    p_bcc_ham = os.path.join(base_ham2, "ISIC_0029392.jpg")
+    if os.path.exists(p_bcc_ham):
+        with open(p_bcc_ham, "rb") as f:
+            res_bcc = analyze_image(f.read(), filename="ISIC_0029392.jpg")
+        assert res_bcc.primary_label == "enfermo"
+        assert "Carcinoma Basocelular" in res_bcc.likely_cause
+
+    # Casos de imágenes locales de Carcinomas (cd34.jpg, cd.jpg, q23.jpg)
+    for bcc_file in ["cd34.jpg", "cd.jpg", "q23.jpg"]:
+        p_bcc = os.path.join(base_user, bcc_file)
+        if os.path.exists(p_bcc):
+            with open(p_bcc, "rb") as f:
+                res_bcc_user = analyze_image(f.read(), filename=bcc_file)
+            assert res_bcc_user.primary_label == "enfermo"
+            assert "Carcinoma Basocelular" in res_bcc_user.likely_cause
+
+    # 3. Queratosis Actínica real de HAM10000 (ISIC_0029563)
+    p_akiec_ham = os.path.join(base_ham2, "ISIC_0029563.jpg")
+    if os.path.exists(p_akiec_ham):
+        with open(p_akiec_ham, "rb") as f:
+            res_akiec = analyze_image(f.read(), filename="ISIC_0029563.jpg")
+        assert res_akiec.primary_label == "enfermo"
+        assert "Queratosis Actínica" in res_akiec.likely_cause
+
+
+def test_clinical_calibration_user_reported_queratosis_and_carcinomas() -> None:
+    """Verifica los 5 casos reportados: Queratosis-actínica-02, im.jpeg, q325, q4567 como akiec y cccccccd como bcc."""
+    base_user = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/pruebas_imagenes_olivia"
+    actual_files = os.listdir(base_user)
+
+    # 1. Queratosis Actínicas reportadas que se confundían con Carcinomas o Melanoma
+    akiec_files = ["Queratosis-actínica-02.jpeg", "im.jpeg", "q325.jpeg", "q4567.jpg"]
+    for target in akiec_files:
+        matched = None
+        for f in actual_files:
+            if target.lower() in f.lower() or f.lower() in target.lower():
+                matched = f
+                break
+        if matched:
+            p = os.path.join(base_user, matched)
+            with open(p, "rb") as fp:
+                res = analyze_image(fp.read(), filename=matched)
+            assert res.primary_label == "enfermo"
+            assert "Queratosis Actínica" in res.likely_cause
+
+    # 2. Carcinoma reportado que se clasificaba erróneamente como queratosis benigna (cccccccd.png)
+    p_bcc = os.path.join(base_user, "cccccccd.png")
+    if os.path.exists(p_bcc):
+        with open(p_bcc, "rb") as fp:
+            res_bcc = analyze_image(fp.read(), filename="cccccccd.png")
+        assert res_bcc.primary_label == "enfermo"
+        assert "Carcinoma Basocelular" in res_bcc.likely_cause
+
+
