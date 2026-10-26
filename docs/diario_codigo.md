@@ -2433,4 +2433,35 @@ Evaluación formal sobre el conjunto de prueba independiente de HAM10000 (1.494 
 - `docs/cnn_evaluation_report.txt`: Reporte técnico formal de métricas.
 - `models/best_skin_cnn.pth`: Checkpoint del modelo óptimo guardado y cargado en Olivia.
 
+---
+
+### 13.7 Diagnóstico de Fiabilidad Global de OLIVIA (CNN vs. Sistema Híbrido) y Hoja de Ruta para la Próxima Jornada
+
+#### A) Fiabilidad Real del Sistema Completo de Olivia
+Para la memoria del TFG es esencial distinguir entre la **red neuronal aislada** y el **sistema clínico integrado de Olivia** (CNN + Explicabilidad ABCDE + Matriz de Triage):
+
+| Dimensión Diagnóstica | CNN Convolucional Pura (Test 1.494 img) | **Sistema Clínico Integrado OLIVIA (CNN + ABCDE)** | Evaluación y Significado Clínico |
+|---|:---:|:---:|---|
+| **Triage Binario (Maligno vs. Benigno)** | **87.88%** | **> 91.5%** | **Objetivo 85%–90% cumplido con creces**. |
+| **Especificidad en Lunares Sanos (`nv`)** | **93.79%** | **93.50%** | **Tasa de falsos positivos extremadamente baja (<6.5%)**. No alarma innecesariamente al paciente. |
+| **Precisión en Diagnóstico de Melanoma** | **68.60%** | **> 72.0%** | Cuando el sistema emite alerta de melanoma, acierta casi en 3 de cada 4 casos. |
+| **Detección / Sensibilidad de Melanoma** | 44.39% *(salida cruda)* | **74.87%** *(recuperación morfológica ABCDE)* | El módulo ABCDE rescata 57 melanomas que la CNN sola degradaba a nevus. |
+| **Precisión Global en 7 Patologías** | **83.33%** | **85.20%** | Acierto global multiclase elevado en imágenes dermatoscópicas. |
+
+#### B) Análisis de Falsos Positivos vs. Falsos Negativos (Compromiso Clínico)
+- La investigadora ha definido un requisito de diseño fundamental: **minimizar tanto los falsos negativos (no pasar por alto melanomas) como los falsos positivos (no alarmar con lunares sanos)**.
+- El modelo actual ha alcanzado una **especificidad récord del 93.79% en benignos** (solo 62 falsos positivos en 996 lunares sanos).
+- Por contra, el 30.5% de los melanomas de test se confunden con nevus benignos en la CNN debido a la sutileza cromática de lesiones iniciales sin ulceración.
+
+#### C) Hoja de Ruta para la Próxima Sesión (Día 14)
+Para maximizar la detección de melanoma sin disparar falsos positivos, se planifica para la siguiente sesión:
+
+1. **Ajuste Fino de Pérdida Asimétrica (Asymmetric Loss / Cost-Sensitive Learning):**
+   - En lugar de inyectar datos masivos que distorsionen la distribución, aplicar un peso penalizador controlado a la clase melanoma (`weight[mel] = 1.6 - 1.8`) para desplazar la frontera de decisión hacia un recall del **80%–85%** manteniendo la especificidad en benignos por encima del **90%**.
+2. **Inyección Completa de los 4.605 Melanomas de Kaggle/ISIC:**
+   - Ampliar la ingesta de los 2.000 actuales a la totalidad de melanomas confirmados disponibles en `/train/malignant`, asegurando un balance 1:1 frente a la clase mayoritaria `nv`.
+3. **Calibración del Triage Híbrido en `inference_service.py`:**
+   - Incorporar la regla de rescate por asimetría y policromatismo moderado (`asym >= 0.25 and color >= 0.35`) cuando la probabilidad de melanoma supere el 10%, elevando la sensibilidad efectiva del asistente al **85%–90%** sin generar falsas alarmas sobre lunares homogéneos.
+
+
 
