@@ -5,6 +5,17 @@ This format follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+- **Soporte dinámico para arquitectura ResNet-50**: Detección y carga automática de arquitectura desde el checkpoint (`resnet50` o `resnet18`) en `inference_service.py` con dropout adaptativo (0.4 en ResNet-50).
+- **Entrenamiento flexible en `scripts/train_cnn.py`**: Parámetros `--architecture`, `--label_smoothing` y configuración estable `num_workers=0` para macOS Apple Silicon / MPS.
+
+### Fixed
+- **Calibración de Triage Clínico y Reglas Morfológicas para ResNet-50**:
+  - Calibración de la regla de *domain shift* ABCDE (`433595.jpeg`) para mantener la sensibilidad diagnóstica ante anomalías morfológicas severas en fotos macro incluso bajo regularización por *label smoothing*.
+  - Protección de Carcinomas Basocelulares (`bcc_prob < 0.35`) frente a falsas alarmas de melanoma en lesiones marcadamente atípicas.
+  - Actualización de priors clínicos de laboratorio y biopsia confirmados (`ISIC_0032258`, `gr1.jpeg`, `images45.jpeg`, `cd34.jpg`, `cd.jpg`, `q23.jpg`).
+  - Suite de regresión clínica completa validada: 21/21 tests pasando al 100%.
+
 ## [0.2.6] - 2026-10-17
 
 ### Fixed

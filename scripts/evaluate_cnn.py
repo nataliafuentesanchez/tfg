@@ -32,7 +32,8 @@ def main():
     _, _, test_df = prepare_data(base_data_dir, image_dirs)
     _, eval_tf = get_transforms()
     test_ds = HAM10000Dataset(test_df, transform=eval_tf)
-    test_loader = DataLoader(test_ds, batch_size=32, shuffle=False, num_workers=2)
+    # num_workers=0 en macOS/MPS evita errores de MallocStackLogging
+    test_loader = DataLoader(test_ds, batch_size=32, shuffle=False, num_workers=0)
     
     best_model_path = "models/best_skin_cnn.pth"
     if not os.path.exists(best_model_path):
@@ -41,8 +42,10 @@ def main():
         
     print(f"Cargando modelo desde {best_model_path}...")
     checkpoint = torch.load(best_model_path, map_location=device, weights_only=False)
+    architecture = checkpoint.get('architecture', 'resnet18')
+    print(f"Arquitectura detectada en checkpoint: {architecture}")
     
-    model = build_model(num_classes=7).to(device)
+    model = build_model(num_classes=7, architecture=architecture).to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     

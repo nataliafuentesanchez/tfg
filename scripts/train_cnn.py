@@ -1,8 +1,9 @@
 # =============================================================================
-# AnalisisImagenes - Entrenamiento de Red Neuronal Convolucional (ResNet-18)
+# AnalisisImagenes - Entrenamiento de Red Neuronal Convolucional (ResNet-50/18)
 # TFG Ingenieria de la Salud - Universidad de Malaga
 # Autor: Natalia Fuentes Sanchez
 # Dataset: HAM10000 (10.015 imagenes dermoscopicas)
+# Built with dbv-specs-ops · https://github.com/davidbuenov/dbv-specs-ops
 # =============================================================================
 
 import os
@@ -70,7 +71,7 @@ def find_image_path(image_id: str, image_dirs: list) -> str:
     return None
 
 
-def prepare_data(data_dir: str, image_dirs: list):
+def prepare_data(data_dir: str, image_dirs: list, extra_melanoma_dir: str = None, max_extra_mel: int = 2000):
     metadata_path = os.path.join(data_dir, "HAM10000_metadata.csv")
     if not os.path.exists(metadata_path):
         raise FileNotFoundError(f"No se encontro el archivo de metadatos en: {metadata_path}")
@@ -103,7 +104,33 @@ def prepare_data(data_dir: str, image_dirs: list):
     val_df = temp_df.iloc[val_idx].copy()
     test_df = temp_df.iloc[test_idx].copy()
     
-    print(f"[2/5] Particion de datos (por lesion_id): Train={len(train_df)} | Val={len(val_df)} | Test={len(test_df)}")
+    # Inyeccion selectiva de melanomas adicionales en train_df (sin tocar val ni test)
+    if extra_melanoma_dir and os.path.exists(extra_melanoma_dir):
+        import glob
+        extra_files = glob.glob(os.path.join(extra_melanoma_dir, "*.jpg"))
+        if extra_files:
+            extra_files = sorted(extra_files)[:max_extra_mel]
+            print(f"[1.5/5] Inyectando {len(extra_files)} melanomas adicionales en TRAIN desde {extra_melanoma_dir}...")
+            extra_rows = []
+            for i, p in enumerate(extra_files):
+                img_id = os.path.splitext(os.path.basename(p))[0]
+                extra_rows.append({
+                    'lesion_id': f'EXTRA_MEL_{i:05d}',
+                    'image_id': img_id,
+                    'dx': 'mel',
+                    'dx_type': 'histo',
+                    'age': 50.0,
+                    'sex': 'unknown',
+                    'localization': 'unknown',
+                    'image_path': p,
+                    'label': DX_MAP['mel'],
+                    'is_malignant': 1
+                })
+            extra_df = pd.DataFrame(extra_rows)
+            train_df = pd.concat([train_df, extra_df], ignore_index=True)
+            print(f"✓ Train enriquecido: nuevo tamaño={len(train_df)} (Melanomas en train={sum(train_df['dx']=='mel')})")
+
+    print(f"[2/5] Particion de datos: Train={len(train_df)} | Val={len(val_df)} | Test={len(test_df)}")
     return train_df, val_df, test_df
 
 
@@ -131,14 +158,24 @@ def get_transforms():
     return train_transform, eval_transform
 
 
-def build_model(num_classes=7):
-    # ResNet-18 con pesos preentrenados
-    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+def build_model(num_classes=7, architecture="resnet50"):
+    """
+    Construye la red neuronal con pesos preentrenados en ImageNet.
+    - resnet50 (por defecto): Mejor capacidad de representacion, nativo en MPS, sin OOM.
+    - resnet18: Baseline ligero del proyecto.
+    """
+    if architecture == "resnet50":
+        model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+    elif architecture == "resnet18":
+        model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+    else:
+        raise ValueError(f"Arquitectura no soportada: {architecture}")
+
     in_features = model.fc.in_features
-    
-    # Capa de clasificacion con Dropout para regularizacion
+    # Dropout 0.4 para resnet50 (mas parametros, mayor riesgo de sobreajuste)
+    dropout_rate = 0.4 if architecture == "resnet50" else 0.3
     model.fc = nn.Sequential(
-        nn.Dropout(0.3),
+        nn.Dropout(dropout_rate),
         nn.Linear(in_features, num_classes)
     )
     return model
@@ -196,10 +233,14 @@ def evaluate(model, loader, criterion, device):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Entrenamiento ResNet-18 sobre HAM10000")
+    parser = argparse.ArgumentParser(description="Entrenamiento ResNet-50/18 sobre HAM10000")
     parser.add_argument("--epochs", type=int, default=10, help="Numero de epocas")
-    parser.add_argument("--batch_size", type=int, default=32, help="Tamano del lote")
+    parser.add_argument("--batch_size", type=int, default=16, help="Tamano del lote (16 recomendado en Apple MPS)")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+    parser.add_argument("--architecture", type=str, default="resnet18", choices=["resnet18", "resnet50"], help="Arquitectura CNN")
+    parser.add_argument("--label_smoothing", type=float, default=0.0, help="Label smoothing para CrossEntropyLoss (0=desactivado)")
+    parser.add_argument("--extra_melanoma_dir", type=str, default="/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos/melanoma_cancer_dataset/train/malignant", help="Directorio con melanomas adicionales para train")
+    parser.add_argument("--max_extra_mel", type=int, default=2000, help="Maximo numero de melanomas adicionales a inyectar")
     args = parser.parse_args()
     
     base_data_dir = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos"
@@ -210,17 +251,25 @@ def main():
     
     device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
     print(f"Dispositivo de computo seleccionado: {device}")
+    print(f"Arquitectura: {args.architecture} | LR: {args.lr} | Batch: {args.batch_size} | Label Smoothing: {args.label_smoothing}")
+    print(f"Melanomas adicionales: {args.extra_melanoma_dir} (max: {args.max_extra_mel})")
     
-    train_df, val_df, test_df = prepare_data(base_data_dir, image_dirs)
+    train_df, val_df, test_df = prepare_data(
+        base_data_dir, 
+        image_dirs, 
+        extra_melanoma_dir=args.extra_melanoma_dir, 
+        max_extra_mel=args.max_extra_mel
+    )
     train_tf, eval_tf = get_transforms()
     
     train_ds = HAM10000Dataset(train_df, transform=train_tf)
     val_ds = HAM10000Dataset(val_df, transform=eval_tf)
     test_ds = HAM10000Dataset(test_df, transform=eval_tf)
     
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=2)
-    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=2)
+    # num_workers=0 en macOS/MPS evita los errores de MallocStackLogging y garantiza estabilidad
+    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=0)
+    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=0)
     
     # Calcular pesos ponderados para balancear clases en la funcion de perdida
     class_counts = train_df['label'].value_counts().sort_index().values
@@ -228,10 +277,10 @@ def main():
     class_weights = class_weights / class_weights.sum() * len(class_counts)
     weight_tensor = torch.tensor(class_weights, dtype=torch.float).to(device)
     
-    print(f"[3/5] Pesos de balanceo calculados para CrossEntropyLoss.")
-    criterion = nn.CrossEntropyLoss(weight=weight_tensor)
+    print(f"[3/5] CrossEntropyLoss con pesos de balanceo y label_smoothing={args.label_smoothing}.")
+    criterion = nn.CrossEntropyLoss(weight=weight_tensor, label_smoothing=args.label_smoothing)
     
-    model = build_model(num_classes=7).to(device)
+    model = build_model(num_classes=7, architecture=args.architecture).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-2)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     
@@ -266,6 +315,7 @@ def main():
             best_val_f1 = val_f1
             torch.save({
                 'epoch': epoch,
+                'architecture': args.architecture,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_f1': val_f1,
@@ -280,6 +330,8 @@ def main():
     # [5/5] Evaluacion en el conjunto Test
     print("\n[5/5] Evaluando en Test Set con el mejor modelo...")
     checkpoint = torch.load(best_model_path, map_location=device, weights_only=False)
+    saved_arch = checkpoint.get('architecture', args.architecture)
+    model = build_model(num_classes=7, architecture=saved_arch).to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
     
     test_loss, test_acc, test_f1, test_preds, test_labels = evaluate(model, test_loader, criterion, device)
@@ -291,12 +343,13 @@ def main():
     print(report)
     
     with open("docs/cnn_evaluation_report.txt", "w") as f:
-        f.write(f"Evaluacion ResNet-18 HAM10000\nFecha: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(f"Evaluacion {saved_arch.upper()} HAM10000\nFecha: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
         f.write(f"Test Accuracy: {test_acc*100:.2f}%\nTest Macro F1: {test_f1:.4f}\n\n")
         f.write(report)
         
     # Guardar metadatos de las clases para la API
     classes_meta = {
+        'architecture': saved_arch,
         'dx_map': DX_MAP,
         'dx_names': DX_NAMES,
         'malignant_classes': list(MALIGNANT_CLASSES),
@@ -313,7 +366,7 @@ def main():
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=[n.split()[0] for n in DX_NAMES],
                 yticklabels=[n.split()[0] for n in DX_NAMES])
-    plt.title("Matriz de Confusion - ResNet-18 (HAM10000 Test Set)", fontsize=13, pad=12)
+    plt.title(f"Matriz de Confusion - {saved_arch.upper()} (HAM10000 Test Set)", fontsize=13, pad=12)
     plt.xlabel("Prediccion del Modelo", fontsize=11)
     plt.ylabel("Diagnostico Real (Ground Truth)", fontsize=11)
     plt.tight_layout()

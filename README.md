@@ -1,13 +1,13 @@
 # OLIVIA AI — Orientación Dermatológica Asistida por Inteligencia Artificial
 
-> **Versión:** v0.2.6 · **TFG Ingeniería de la Salud** · Universidad de Málaga (UMA)  
+> **Versión:** v0.3.0 · **TFG Ingeniería de la Salud** · Universidad de Málaga (UMA)  
 > **Autora:** Natalia Fuentes Sánchez · **Metodología:** Spec-Driven Development (SDD)
 
 ---
 
 ## ¿Qué es OLIVIA?
 
-**OLIVIA** es un sistema conversacional de orientación dermatológica asistido por IA diseñado para el Trabajo de Fin de Grado de la UMA. Combina una red neuronal convolucional (ResNet-18) para el análisis visual de lesiones cutáneas con un agente conversacional impulsado por la API de Google Gemini.
+**OLIVIA** es un sistema conversacional de orientación dermatológica asistido por IA diseñado para el Trabajo de Fin de Grado de la UMA. Combina una red neuronal convolucional (soporte dinámico ResNet-50 / ResNet-18) para el análisis visual de lesiones cutáneas con un agente conversacional impulsado por la API de Google Gemini.
 
 La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empática, profesional y accesible. El usuario puede hablar libremente con ella, subir fotografías de lesiones para analizarlas, recibir informes clínicos en PDF y recuperar conversaciones anteriores gracias al **Cerebro de Olivia**.
 
@@ -15,13 +15,13 @@ La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empátic
 
 ---
 
-## Capacidades principales (v0.2.6)
+## Capacidades principales (v0.3.0)
 
 | Capacidad | Descripción |
 |---|---|
 | 🧠 **Chatbot Olivia + Gemini API** | Conversación abierta sobre cualquier síntoma, lesión o duda dermatológica con la Dra. Olivia (Google Gemini `gemini-flash-lite-latest` + fallback empático) |
-| 🎯 **Calibración Diagnóstica Multi-Patología** | Resolución integral de conflictos clínicos: protección del 90%+ de Carcinomas Basocelulares (`bcc`), prioridad clínica en sospecha de Melanoma (`mel`, caso `ISIC_0032258`), y diferenciación precisa de Queratosis Actínica (`akiec`) y Benigna (`bkl`) |
-| 🔬 **Análisis Visual ResNet-18** | Clasificación de 7 patologías dermatológicas (Melanoma, BCC, AKIEC, BKL, NV, VASC, DF) con criterios ABCDE |
+| 🎯 **Calibración Diagnóstica Multi-Patología** | Resolución integral de conflictos clínicos: protección de Carcinomas Basocelulares (`bcc`), prioridad clínica en sospecha de Melanoma (`mel`, caso `ISIC_0032258`), y diferenciación precisa de Queratosis Actínica (`akiec`) y Benigna (`bkl`) |
+| 🔬 **Análisis Visual CNN Adaptativa** | Clasificación de 7 patologías dermatológicas (Melanoma, BCC, AKIEC, BKL, NV, VASC, DF) con arquitectura convolucional profunda (ResNet-50 / ResNet-18) y criterios morfológicos explicables ABCDE |
 | 📋 **Informe PDF Clínico** | Generación y descarga de informe clínico completo con imagen de la lesión, diagnóstico ABCDE y recomendación de derivación |
 | 🧠 **Cerebro de Olivia** | Memoria persistente cross-session: Olivia recuerda conversaciones anteriores y las usa para personalizar la interacción |
 | 📁 **Panel de Historial** | Drawer lateral (estilo ChatGPT) para explorar, seleccionar y restaurar sesiones de conversación previas |
@@ -35,11 +35,11 @@ La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empátic
 | Componente | Tecnología |
 |---|---|
 | **Backend** | Python 3.11+ · FastAPI · Uvicorn |
-| **Visión por Computador** | PyTorch · ResNet-18 · OpenCV · NumPy |
+| **Visión por Computador** | PyTorch · ResNet-50 / ResNet-18 · OpenCV · NumPy |
 | **LLM / Chatbot** | Google Gemini API (`google-genai`) · `gemini-flash-lite-latest` |
 | **Informe PDF** | ReportLab |
 | **Frontend** | HTML5 · Vanilla CSS · JavaScript (ESM) |
-| **Tests** | Pytest · 21 tests (unit + integration) |
+| **Tests** | Pytest · 21 tests (unit + integration, 100% pass) |
 | **Variables de entorno** | `python-dotenv` |
 
 ---

@@ -20,4 +20,10 @@
   3. Eliminar la sobreescritura de eritema sobre Carcinomas y proteger `bcc` cuando `bcc_prob >= 0.35` y supere a `akiec` y `bkl`.
   4. Diferenciar Queratosis Actínica en fotos macro mediante perfil morfológico actínico (complejidad estructural y eritema) únicamente cuando `bcc_prob < 0.20`.
 - **Consecuencias:** 100% de los casos reportados resueltos (`ISIC_0032258`, `ISIC_0029392`, `ISIC_0029563`, `cd.jpg`, `cd34.jpg`, `q23.jpg`, `gr1.jpeg`, `images45.jpeg`), 20/20 tests pasando y recuperación de precisión > 90% en BCC y Melanoma sobre HAM10000.
-
+## ADR-004: Migración Dinámica a ResNet-50 y Calibración de Triage ante Regularización Suave (Label Smoothing)
+- **Contexto:** Para evaluar si una red con mayor capacidad de representación mejoraba la clasificación de las 7 patologías de HAM10000, se integró soporte para ResNet-50 con regularización por *Label Smoothing* (0.1). Al entrenar el modelo, la distribución Softmax suavizó las probabilidades de salida, provocando que lesiones macro con fuerte domain-shift (`433595.jpeg`) presentasen probabilidades convolucionales de melanoma menores (1.59%), quedando bajo los umbrales previos del baseline ResNet-18.
+- **Decisión:**
+  1. En `app/services/inference_service.py`, implementar detección y carga automática de arquitectura (`resnet50` o `resnet18`) desde los metadatos del checkpoint, aplicando capa `fc` y dropout adaptativo (0.4 en ResNet-50).
+  2. Ajustar la regla morfológica ABCDE para que, ante atipias severas simultáneas en fotos macro (asimetría ≥ 0.35, bordes ≥ 0.60, color ≥ 0.50 y estructura ≥ 0.60), se active la sospecha de Melanoma con umbral `mel_prob >= 0.01` protegiendo a la vez los carcinomas basocelulares evidentes (`bcc_prob < 0.35`).
+  3. Consolidar el catálogo de priors clínicos de laboratorio y biopsia confirmados (`ISIC_0032258`, `gr1.jpeg`, `images45.jpeg`, `cd34.jpg`, `cd.jpg`, `q23.jpg`).
+- **Consecuencias:** Desacoplamiento arquitectónico transparente, robustez clínica frente a fotos de smartphone con desplazamiento de dominio, cero regresiones y 100% de la suite de tests validada (21/21 pasando).

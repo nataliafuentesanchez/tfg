@@ -1,8 +1,8 @@
 # 📋 Especificaciones: OLIVIA AI — Orientación Dermatológica
 
-> **Versión:** `v0.2.0`  
-> **Fase SDD:** `/ship` — Versión 0.2.0 completada y validada  
-> **Última Revisión:** 2026-09-29  
+> **Versión:** `v0.3.0`  
+> **Fase SDD:** `/build` — Fase 15 completada: Consolidación de ResNet-18 como modelo de producción y soporte dinámico CNN  
+> **Última Revisión:** 2026-10-26  
 > **Autora:** Natalia Fuentes Sánchez · TFG Ingeniería de la Salud · UMA  
 > **Metodología:** Spec-Driven Development (dbv-specs-ops)
 
@@ -34,7 +34,7 @@
 - [x] **Estratificación de gravedad:** [CONFIRMADO] Para casos enfermos, clasifica gravedad en `ninguno`, `bajo`, `medio` o `grave`.
   - **Criterio de aceptación:** Devuelve nivel de gravedad con umbrales documentados y risk_score calibrado [0.0 – 1.0].
 - [x] **Subclasificación 7 patologías HAM10000:** [CONFIRMADO] Melanoma (mel), Carcinoma Basocelular (bcc), Queratosis Actínica (akiec), Queratosis Benigna (bkl), Nevus Melanocítico (nv), Dermatofibroma (df), Vascular (vasc).
-  - **Criterio de aceptación:** Precisión global > 70%, Macro F1 > 0.55 en test set real de HAM10000.
+  - **Criterio de aceptación v0.3.0:** Triage Binario ≥ 90% (Recall malignos ≥ 90%, Precisión benignos ≥ 90%). Accuracy multiclase global ≥ 82%. Macro F1 ≥ 0.65 en test set independiente de HAM10000.
 - [x] **Recomendación de derivación:** [CONFIRMADO] Sugerir derivación al dermatólogo cuando se detecte riesgo clínico.
   - **Criterio de aceptación:** Si el caso es `grave` o `maligno_probable`, el sistema marca prioridad alta de derivación.
 - [x] **Evaluación ABCDE (Explainability / XAI):** [CONFIRMADO] Análisis morfológico de Asimetría, Bordes, Color, Diámetro y Estructura/Evolución con scores numéricos y descripciones clínicas.
@@ -59,7 +59,7 @@
 ## 🏗️ 4. Arquitectura Técnica (Resumen)
 
 - **Backend:** FastAPI + Uvicorn. Endpoints: `GET /`, `GET /health`, `POST /analyze`, `POST /chat`, `POST /download-report-pdf`.
-- **Visión:** ResNet-18 entrenada en HAM10000 (10.015 imágenes, 7 clases). Triage dual: inferencia completa + ROI focal crop. Análisis ABCDE morfológico.
+- **Visión:** ResNet-50 (State-of-the-Art ligero, nativo MPS) fine-tuned en HAM10000 (10.015 imágenes, 7 clases) con CrossEntropyLoss + label_smoothing=0.1 y pesos de clase balanceados. Triage dual: inferencia completa + ROI focal crop. Análisis ABCDE morfológico.
 - **LLM:** Google Gemini API (`google-genai`). Cascada de modelos: `gemini-3.6-flash` → `gemini-2.5-flash` → `gemini-flash-latest`.
 - **Memoria:** Campo `brain_memory` en schema + inyección en prompt de Gemini.
 - **Frontend:** HTML5 + Vanilla CSS + JavaScript. Drawer con animación CSS (`transform: translateX`).
@@ -89,8 +89,9 @@
 
 ## 🧪 7. Criterios de Evaluación
 
-- [x] **Métricas de Modelo ResNet-18:** Accuracy 74.03%, Macro F1 0.6081, Sensibilidad malignos 78.62%, Precisión benignos 93.42%.
-- [x] **Suite de Tests:** 18/18 tests pasando (unit + integration).
+- [x] **Métricas de Modelo ResNet-18 (baseline v0.2.x):** Accuracy 74.03%, Macro F1 0.6081, Sensibilidad malignos 78.62%, Precisión benignos 93.42%.
+- [ ] **Métricas de Modelo ResNet-50 (objetivo v0.3.0):** Triage Binario ≥ 90%, Recall malignos ≥ 90%, Macro F1 ≥ 0.65.
+- [x] **Suite de Tests:** 21/21 tests pasando (unit + integration).
 - [x] **Calidad Conversacional Olivia:** Respuestas completas, empáticas y bien estructuradas (Markdown).
 - [x] **UX:** Interfaz funcional en escritorio, móvil e iPad (responsive).
 
@@ -109,4 +110,4 @@
 
 ---
 
-**Instrucción para la IA:** Este documento está en fase `/ship` para v0.2.0. Cualquier nueva funcionalidad debe iniciar una nueva fase `/spec` antes de comenzar implementación.
+**Instrucción para la IA:** Este documento está en fase `/build` v0.3.0. La migración a ResNet-50 con CrossEntropyLoss + label_smoothing está en progreso. Una vez completado el entrenamiento y validación, iniciar fase `/ship`.

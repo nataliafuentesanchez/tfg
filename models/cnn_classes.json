@@ -18,10 +18,10 @@
     "df (Dermatofibroma)"
   ],
   "malignant_classes": [
-    "bcc",
+    "akiec",
     "mel",
-    "akiec"
+    "bcc"
   ],
-  "test_accuracy": 0.7402945113788487,
-  "test_macro_f1": 0.6080640025822005
+  "test_accuracy": 0.8333333333333334,
+  "test_macro_f1": 0.6994467198727731
 }

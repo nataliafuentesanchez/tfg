@@ -190,7 +190,9 @@ def test_clinical_calibration_melanoma_vs_carcinoma_conflict_resolution() -> Non
 
 def test_clinical_calibration_user_reported_queratosis_and_carcinomas() -> None:
     """Verifica los 5 casos reportados: Queratosis-actínica-02, im.jpeg, q325, q4567 como akiec y cccccccd como bcc."""
-    base_user = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/pruebas_imagenes_olivia"
+    base_user = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos/pruebas_imagenes_olivia"
+    if not os.path.exists(base_user):
+        base_user = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/pruebas_imagenes_olivia"
     actual_files = os.listdir(base_user)
 
     # 1. Queratosis Actínicas reportadas que se confundían con Carcinomas o Melanoma

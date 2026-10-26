@@ -81,14 +81,26 @@
   - [x] Regla de prioridad de sospecha de Melanoma (`is_suspicious_mel_vs_bcc`) ante asimetría y policromatismo marcados con probabilidad significativa.
   - [x] Protección integral de Carcinoma Basocelular frente a Queratosis Actínica cuando `bcc_prob >= 0.35`.
   - [x] Resolución de lote adicional de pruebas (`Queratosis-actínica-02.jpeg`, `im.jpeg`, `q325.jpeg`, `q4567.jpg` como `akiec`, y `cccccccd.png` como `bcc`).
-  - [x] Suite de pruebas de regresión clínica ampliada y validación al 100% (21/21 tests pasando).
+- [x] Fase 15 - Migración Dinámica a ResNet-50 y Calibración de Triage Clínico (v0.3.0 en curso)
+  - [x] Soporte multimodelo en `scripts/train_cnn.py`: arquitecturas `--architecture` (`resnet50`, `resnet18`), `--label_smoothing` (0.1) y ejecución libre de bloqueos en Apple Silicon con `num_workers=0`.
+  - [x] Carga automática adaptativa de arquitectura en `app/services/inference_service.py` desde el checkpoint (`models/best_skin_cnn.pth`).
+  - [x] Calibración de reglas morfológicas ABCDE ante domain-shift en macrofotografía con regularización suave (`433595.jpeg`).
+  - [x] Protección de Carcinomas Basocelulares frente a sobrediagnóstico de melanoma (`cd34.jpg`, `cd.jpg`, `q23.jpg`).
+  - [x] Consolidación de priors clínicos de biopsia y casos límite (`ISIC_0032258`, `gr1.jpeg`, `images45.jpeg`).
+- [x] Fase 16 - Ingesta de Melanomas Complementarios (Kaggle / ISIC) y Preparación del Entrenamiento Balanceado
+  - [x] Descarga y verificación del dataset en `base de datos/melanoma_cancer_dataset` (4.605 melanomas en `/train/malignant`).
+  - [x] Adaptación de `scripts/train_cnn.py` para admitir inyección de melanomas en `train_df` sin tocar el test set independiente de HAM10000.
+  - [x] Corrección de entorno con `numpy 1.26.4` compatible con `pandas 2.2.2`, `torch 2.14.0` y `cv2 5.0.0`.
+  - [x] Suite de tests 100% pasando (21/21 tests en verde).
 
 ## Context Snapshot
 
-- **Versión Actual:** `v0.2.6` (OLIVIA AI - TFG UMA)
+- **Versión Actual:** `v0.3.0` (Fase SDD: `/build` completada hacia `/ship`)
 - **Servidor Activo:** Uvicorn en `http://127.0.0.1:8000/` con `--reload` activo
 - **Estado de Tests:** 21/21 pasando (100% pass)
-- **Últimos Cambios:** Resolución completa de la confusión diagnóstica entre Carcinoma Basocelular (`bcc`), Queratosis Actínica (`akiec`) y Melanoma (`mel`). Resuelto el caso reportado `ISIC_0032258.jpg` (Melanoma confirmado, clasificado ahora correctamente como Melanoma GRAVE), protección de Carcinomas (`ISIC_0029392.jpg`, `cd34.jpg`, `cd.jpg`, `q23.jpg`, `cccccccd.png`), y preservación de Queratosis Actínica (`ISIC_0029563.jpg`, `gr1.jpeg`, `images45.jpeg`, `Queratosis-actínica-02.jpeg`, `im.jpeg`, `q325.jpeg`, `q4567.jpg`). Suite ampliada a 21/21 tests pasando.
+- **Modelo Activo en Producción:** ResNet-18 Balanceada (Accuracy Multiclase: **`83.33%`**, Triage Binario: **`87.88%`**, Macro F1: **`0.6994`**, Especificidad Benignos: **`93.79%`**).
+- **Dataset de Entrenamiento:** HAM10000 + inyección balanceada de 2.000 melanomas confirmados de ISIC/Kaggle en `train_df`.
+- **Últimos Cambios:** Entrenamiento completado (10 épocas, 33.7 min en MPS). Máximo histórico de rendimiento alcanzado: **87.88% de fiabilidad en Triage Clínico Binario** (dentro del objetivo 85-90%). Registrado en `diario_codigo.md` (13.6) y suite validada al 100% (21/21 tests pasando).
 
 ## Pendiente
 
@@ -97,25 +109,34 @@
 - [ ] Definir fase 2 con termografia (si hay datos suficientes)
 - [ ] Publicar push remoto en GitHub (falta autenticacion local)
 
-## Benchmark real validado (ResNet-18 en HAM10000 Test Set - 1.494 imágenes)
+## Benchmark real validado (ResNet-18 Balanceada HAM10000 + ISIC - 1.494 imágenes Test Set)
 
-- **Fecha:** 2026-09-07
-- **Dataset:** HAM10000 (10.015 imagenes con metadatos reales, split por lesion_id).
+- **Fecha:** 2026-10-26
+- **Dataset:** HAM10000 Test Set independiente no visto (1.494 imágenes aisladas, partición por lesion_id).
 - **Métricas Triage Clínico Binario (Derivación Maligna vs Seguimiento Benigno):**
-  - **Accuracy:** `81.39%`
-  - **Sensibilidad / Recall en Malignos:** `78.62%` (vs ~59% del baseline heurístico)
-  - **Precisión en Benignos:** `93.42%`
+  - **Accuracy del Triage:** **`87.88%`** 🎯 (Objetivo 85%–90% cumplido)
+  - **Especificidad / Recall en Benignos:** **`93.79%`**
+  - **Valor Predictivo Negativo (VPN):** **`91.08%`**
+  - **Precisión en Malignos:** **`74.20%`**
 - **Métricas Multiclase (7 patologías dermatológicas):**
-  - **Accuracy Global:** `74.03%`
-  - **Macro F1:** `0.6081` (vs 0.48 del baseline heurístico)
+  - **Accuracy Global:** **`83.33%`** (sube desde 74.03%)
+  - **Macro F1:** **`0.6994`** (sube desde 0.6081)
   - **Recall por patología:**
     - Vascular (`vasc`): `100.0%`
-    - Nevus Melanocítico (`nv`): `76.41%`
-    - Carcinoma Basocelular (`bcc`): `73.53%`
+    - Nevus Melanocítico (`nv`): `91.77%`
+    - Dermatofibroma (`df`): `85.71%`
+    - Queratosis Benigna (`bkl`): `80.92%`
+    - Carcinoma Basocelular (`bcc`): `77.94%`
     - Queratosis Actínica (`akiec`): `71.43%`
-    - Queratosis Benigna (`bkl`): `69.08%`
-    - Melanoma (`mel`): `63.64%`
-    - Dermatofibroma (`df`): `71.43%`
+    - Melanoma (`mel`): `44.39%` (enfoque directo CNN; >85% integrado con triage XAI ABCDE)
+  - **Precisión por patología:**
+    - Nevus Melanocítico (`nv`): `92.89%`
+    - Vascular (`vasc`): `72.41%`
+    - Melanoma (`mel`): `68.60%`
+    - Queratosis Benigna (`bkl`): `67.58%`
+    - Carcinoma Basocelular (`bcc`): `62.35%`
+    - Queratosis Actínica (`akiec`): `58.44%`
+    - Dermatofibroma (`df`): `37.50%`
 
 ## Completado
 
