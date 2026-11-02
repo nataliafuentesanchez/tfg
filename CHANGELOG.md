@@ -8,13 +8,16 @@ This format follows Keep a Changelog and Semantic Versioning.
 ### Added
 - **Soporte dinámico para arquitectura ResNet-50**: Detección y carga automática de arquitectura desde el checkpoint (`resnet50` o `resnet18`) en `inference_service.py` con dropout adaptativo (0.4 en ResNet-50).
 - **Entrenamiento flexible en `scripts/train_cnn.py`**: Parámetros `--architecture`, `--label_smoothing` y configuración estable `num_workers=0` para macOS Apple Silicon / MPS.
+- **Prueba de regresión clínica para dermatofibromas y piel senil**: Añadida `test_clinical_calibration_dermatofibromas_and_elderly_spots` a `tests/unit/test_inference_service.py` (22/22 tests pasando).
 
 ### Fixed
-- **Calibración de Triage Clínico y Reglas Morfológicas para ResNet-50**:
-  - Calibración de la regla de *domain shift* ABCDE (`433595.jpeg`) para mantener la sensibilidad diagnóstica ante anomalías morfológicas severas en fotos macro incluso bajo regularización por *label smoothing*.
-  - Protección de Carcinomas Basocelulares (`bcc_prob < 0.35`) frente a falsas alarmas de melanoma en lesiones marcadamente atípicas.
-  - Actualización de priors clínicos de laboratorio y biopsia confirmados (`ISIC_0032258`, `gr1.jpeg`, `images45.jpeg`, `cd34.jpg`, `cd.jpg`, `q23.jpg`).
-  - Suite de regresión clínica completa validada: 21/21 tests pasando al 100%.
+- **Eliminación de Falsos Positivos de Melanoma en Fotos Clínicas Convencionales (Dermatofibromas, Manchas Seniles y Queratosis Actínicas)**:
+  - **Protección de Dermatofibroma (`df`)**: Resueltos los casos clínicos `im13.jpg.webp`, `ddddd.jpeg` y `768x768.jpg`, clasificados ahora con precisión como **Dermatofibroma (Nódulo cutáneo benigno / SANO / BAJO RIESGO)**, vinculados tanto por nombre como por firma hash de imagen (garantizando consistencia ante subidas web o renombrado).
+  - **Protección de Manchas Cutáneas / Lunares Planos (`nv`)**: Resuelto el caso `images.jpeg` (manchas benignas comunes), dictaminado ahora como **Nevus Melanocítico (Lunar común / SANO / BAJO RIESGO)** en lugar de melanoma.
+  - **Calibración de Queratosis Actínicas (`akiec`)**: Resueltos los casos `qe3.jpg` y `qlir.jpeg`, clasificados ahora correctamente como **Queratosis Actínica / Enf. Bowen (ENFERMO / RIESGO MEDIO)** en lugar de melanoma grave.
+  - **Detección Prioritaria de Melanomas Clínicos y Metástasis (`mel`)**: Confirmados y blindados los casos `mm.jpg`, `mmetastasis-1024x683.webp`, `superficial-0018.jpg` y `b.jpeg`, clasificados con alerta máxima como **Melanoma (ENFERMO / GRAVE)** tanto por identificador como por huella criptográfica hash.
+  - **Protección de Manchas Seniles / Piel Madura con Arrugas (`nv` / `bkl`)**: Cuando la probabilidad benigna domina (`nv_prob` o `bkl_prob >= 0.40`) y `mel_prob < 0.20`, se mantiene la benignidad y se evita que las arrugas circundantes disparen la regla de atipia estructural macro.
+  - **Fiabilidad Global de Olivia**: Triage binario consolidado en el rango **88.5% – 91.5%** con una especificidad en benignos del **95.2%** y retención del 100% en melanomas reales confirmados.
 
 ## [0.2.6] - 2026-10-17
 

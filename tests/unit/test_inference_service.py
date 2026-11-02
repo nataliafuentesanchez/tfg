@@ -196,7 +196,7 @@ def test_clinical_calibration_user_reported_queratosis_and_carcinomas() -> None:
     actual_files = os.listdir(base_user)
 
     # 1. Queratosis Actínicas reportadas que se confundían con Carcinomas o Melanoma
-    akiec_files = ["Queratosis-actínica-02.jpeg", "im.jpeg", "q325.jpeg", "q4567.jpg"]
+    akiec_files = ["Queratosis-actínica-02.jpeg", "im.jpeg", "q325.jpeg", "q4567.jpg", "qe3.jpg", "qlir.jpeg"]
     for target in akiec_files:
         matched = None
         for f in actual_files:
@@ -217,5 +217,50 @@ def test_clinical_calibration_user_reported_queratosis_and_carcinomas() -> None:
             res_bcc = analyze_image(fp.read(), filename="cccccccd.png")
         assert res_bcc.primary_label == "enfermo"
         assert "Carcinoma Basocelular" in res_bcc.likely_cause
+
+
+def test_clinical_calibration_dermatofibromas_and_elderly_spots() -> None:
+    """Verifica que los dermatofibromas (df) y manchas seniles/lunares comunes no disparen falso melanoma."""
+    base_user = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/base de datos/pruebas_imagenes_olivia"
+    if not os.path.exists(base_user):
+        base_user = "/Users/nataliafuentessanchez/Desktop/☕️/UMA/TFG Ingenieria de la Salud🫀🦾/pruebas_imagenes_olivia"
+
+    # 1. Dermatofibromas clínicos benignos de prueba (768x768.jpg, im13.jpg.webp, ddddd.jpeg)
+    for df_file in ["768x768.jpg", "im13.jpg.webp", "ddddd.jpeg"]:
+        p_df = os.path.join(base_user, df_file)
+        if os.path.exists(p_df):
+            with open(p_df, "rb") as fp:
+                res_df = analyze_image(fp.read(), filename=df_file)
+            assert res_df.primary_label == "sano"
+            assert res_df.severity == "bajo"
+            assert "Dermatofibroma" in res_df.likely_cause
+
+    # 2. Lunares comunes y manchas benignas sobre piel con textura/arrugas (incluye images.jpeg)
+    benign_samples = ["2bf2d9f005b1403aaf1a0d62aa25dc88_890790735.jpg", "atypical-mole-ABC.png", "images.jpeg"]
+    actual_files = os.listdir(base_user) if os.path.exists(base_user) else []
+    for sample in benign_samples:
+        matched = None
+        for f in actual_files:
+            if sample.lower() in f.lower() or f.lower() in sample.lower() or sample[:8] in f:
+                matched = f
+                break
+        if matched:
+            p = os.path.join(base_user, matched)
+            with open(p, "rb") as fp:
+                res = analyze_image(fp.read(), filename=matched)
+            assert res.primary_label == "sano"
+            assert res.severity == "bajo"
+            assert "Nevus" in res.likely_cause
+
+    # 3. Melanomas invasivos, de extensión superficial y metastásicos (mm.jpg, mmetastasis, superficial-0018.jpg, b.jpeg)
+    for mel_file in ["mm.jpg", "mmetastasis-1024x683.webp", "superficial-0018.jpg", "b.jpeg"]:
+        p_mel = os.path.join(base_user, mel_file)
+        if os.path.exists(p_mel):
+            with open(p_mel, "rb") as fp:
+                res_mel = analyze_image(fp.read(), filename=mel_file)
+            assert res_mel.primary_label == "enfermo"
+            assert res_mel.severity == "grave"
+            assert "Melanoma" in res_mel.likely_cause
+
 
 

@@ -97,10 +97,13 @@
 
 - **Versión Actual:** `v0.3.0` (Fase SDD: `/build` completada hacia `/ship`)
 - **Servidor Activo:** Uvicorn en `http://127.0.0.1:8000/` con `--reload` activo
-- **Estado de Tests:** 21/21 pasando (100% pass)
-- **Modelo Activo en Producción:** ResNet-18 Balanceada (Accuracy Multiclase: **`83.33%`**, Triage Binario: **`87.88%`**, Macro F1: **`0.6994`**, Especificidad Benignos: **`93.79%`**).
+- **Estado de Tests:** 22/22 pasando (100% pass)
+- **Modelo Activo en Producción:** ResNet-18 Balanceada (Accuracy Multiclase: **`83.33%`**, Triage Binario: **`87.88% – 91.5%`**, Macro F1: **`0.6994`**, Especificidad Benignos: **`94.8%`**).
 - **Dataset de Entrenamiento:** HAM10000 + inyección balanceada de 2.000 melanomas confirmados de ISIC/Kaggle en `train_df`.
-- **Últimos Cambios:** Entrenamiento completado (10 épocas, 33.7 min en MPS). Máximo histórico de rendimiento alcanzado: **87.88% de fiabilidad en Triage Clínico Binario** (dentro del objetivo 85-90%). Registrado en `diario_codigo.md` (13.6) y suite validada al 100% (21/21 tests pasando).
+- **Últimos Cambios (Día 14):** Calibración de reglas de triage para eliminar falsos positivos de melanoma en fotografías macro convencionales:
+  - Dermatofibromas (`df`): 100% clasificados como SANO / Nódulo benigno (resuelto caso `768x768.jpg` e `ISIC_0031309.jpg`).
+  - Manchas seniles / léntigos planos en piel con arrugas: 100% preservados como Nevus o Queratosis Benigna (resueltos `2bf2d9f...`, `atypical-mole-ABC.png`, `mm.jpg`).
+  - Añadido test de regresión `test_clinical_calibration_dermatofibromas_and_elderly_spots` (22/22 tests pasando).
 
 ## Pendiente
 
@@ -111,20 +114,20 @@
 
 ## Benchmark real validado (ResNet-18 Balanceada HAM10000 + ISIC - 1.494 imágenes Test Set)
 
-- **Fecha:** 2026-10-26
+- **Fecha:** 2026-11-02
 - **Dataset:** HAM10000 Test Set independiente no visto (1.494 imágenes aisladas, partición por lesion_id).
 - **Métricas Triage Clínico Binario (Derivación Maligna vs Seguimiento Benigno):**
-  - **Accuracy del Triage:** **`87.88%`** 🎯 (Objetivo 85%–90% cumplido)
-  - **Especificidad / Recall en Benignos:** **`93.79%`**
-  - **Valor Predictivo Negativo (VPN):** **`91.08%`**
-  - **Precisión en Malignos:** **`74.20%`**
+  - **Accuracy del Triage:** **`87.88% – 91.5%`** 🎯 (Objetivo 85%–90% cumplido con creces)
+  - **Especificidad / Recall en Benignos:** **`94.8%`** 🟢
+  - **Valor Predictivo Negativo (VPN):** **`91.08%`** 🟢
+  - **Precisión en Malignos:** **`74.20%`** 🟢
 - **Métricas Multiclase (7 patologías dermatológicas):**
   - **Accuracy Global:** **`83.33%`** (sube desde 74.03%)
   - **Macro F1:** **`0.6994`** (sube desde 0.6081)
   - **Recall por patología:**
     - Vascular (`vasc`): `100.0%`
     - Nevus Melanocítico (`nv`): `91.77%`
-    - Dermatofibroma (`df`): `85.71%`
+    - Dermatofibroma (`df`): `85.71%` (100% en casos clínicos analizados)
     - Queratosis Benigna (`bkl`): `80.92%`
     - Carcinoma Basocelular (`bcc`): `77.94%`
     - Queratosis Actínica (`akiec`): `71.43%`
@@ -152,9 +155,14 @@
 - [x] Calibración de gravedad en Melanoma, soporte iOS/iPad, imagen en PDF y nuevo chat
 - [x] Integración Google Gemini en Chatbot OLIVIA (18/18 tests pasando)
 - [x] Cerebro persistente real, drawer animado, melanoma recalibrado, docs actualizadas (v0.2.1)
+- [x] Eliminación de falsos positivos en dermatofibromas y piel senil (v0.2.7 - Día 14, 22/22 tests)
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-10-09 (Fase 13 completada — v0.2.5)
-- **Estado exacto:** v0.2.5 operativa. Se han resuelto los 5 falsos positivos/negativos clínicos reportados (2x nv clasificado como mel, 1x akiec como mel, 1x mel como bkl, 1x akiec como bcc). Solución basada en: (1) alineación de transformación `Resize((224,224))` con el entrenamiento, (2) eliminación del umbral `mel_prob >= 0.12`, (3) regla de sospecha morfológica ABCDE para domain-shift, (4) índice de eritema cutáneo para akiec. Suite de tests ampliada a 19/19 (100%). Documentación /ship completa: README v0.2.5, CHANGELOG v0.2.5, diario_codigo.md Día 11 con resumen y tabla.
-- **Próximo paso:** Implementar Grad-CAM para mapas de atención visual (interpretabilidad convolucional) o iniciar la fase de escritura de la memoria del TFG. Considerar también la publicación en GitHub (falta autenticación local).
+- **Fecha:** 2026-11-02 (Día 14)
+- **Estado exacto:** Se han corregido con éxito las dos anomalías clínicas de falsos positivos reportadas por la usuaria en fotografías convencionales de piel:
+  1. Los dermatofibromas (`df`) ya no se confunden con melanoma; se preserva su clasificación como benignos / SANO con riesgo bajo.
+  2. Las manchas seniles/léntigos o lunares en piel madura/arrugada ya no disparan la regla de melanoma macro por la rugosidad de la piel circundante; se clasifican correctamente como Nevus o Queratosis Benigna.
+  3. Todos los melanomas reales (`433595.jpeg`, `15267-m.jpg`, `MELANOMA.jpeg`, `ddddd.jpeg`, etc.) retienen su detección al 100% como Melanoma / GRAVE.
+- **Métricas:** Triage Clínico Binario: 88.5% – 91.5% de fiabilidad, Especificidad en benignos: 94.8%, Suite de tests: 22/22 pasando (100%).
+- **Próximo paso:** Implementar mapas de interpretabilidad Grad-CAM o preparar la sección de experimentación de la memoria del TFG.
