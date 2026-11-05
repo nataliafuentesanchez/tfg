@@ -28,3 +28,7 @@ class AnalysisResponse(BaseModel):
         default=None,
         description="Imagen analizada codificada en Base64 para inclusion en PDF"
     )
+    gradcam_image_base64: Optional[str] = Field(
+        default=None,
+        description="Mapa de atencion visual e interpretabilidad Grad-CAM codificado en Base64"
+    )

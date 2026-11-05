@@ -128,7 +128,7 @@ def generate_clinical_pdf(analysis_data: Dict[str, Any]) -> bytes:
     story.append(badge_table)
     story.append(Spacer(1, 12))
 
-    # Extracción y decodificación de la imagen del usuario
+    # Extracción y decodificación de la imagen del usuario y Grad-CAM
     image_element = None
     img_b64 = analysis_data.get("image_base64")
     if img_b64:
@@ -137,9 +137,21 @@ def generate_clinical_pdf(analysis_data: Dict[str, Any]) -> bytes:
                 img_b64 = img_b64.split(",", 1)[1]
             img_bytes = base64.b64decode(img_b64)
             img_io = BytesIO(img_bytes)
-            image_element = RLImage(img_io, width=125, height=125)
+            image_element = RLImage(img_io, width=105, height=105)
         except Exception as e:
             print(f"Aviso al procesar imagen base64 para PDF: {e}")
+
+    gradcam_element = None
+    gradcam_b64 = analysis_data.get("gradcam_image_base64")
+    if gradcam_b64:
+        try:
+            if "," in gradcam_b64:
+                gradcam_b64 = gradcam_b64.split(",", 1)[1]
+            cam_bytes = base64.b64decode(gradcam_b64)
+            cam_io = BytesIO(cam_bytes)
+            gradcam_element = RLImage(cam_io, width=105, height=105)
+        except Exception as e:
+            print(f"Aviso al procesar mapa Grad-CAM base64 para PDF: {e}")
 
     patology = analysis_data.get("likely_cause", "No especificado")
     risk_score = analysis_data.get("risk_score", 0.0)
@@ -169,7 +181,49 @@ def generate_clinical_pdf(analysis_data: Dict[str, Any]) -> bytes:
         ],
     ]
 
-    if image_element:
+    if image_element and gradcam_element:
+        metrics_table = Table(metrics_table_data, colWidths=[120, 160])
+        metrics_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('PADDING', (0, 0), (-1, -1), 4),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+
+        img_box_data = [
+            [Paragraph("<b>Foto original</b>", ParagraphStyle('Cap1', parent=body_style, fontSize=8, alignment=TA_CENTER))],
+            [image_element]
+        ]
+        img_box = Table(img_box_data, colWidths=[120])
+        img_box.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F1F5F9')),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+            ('PADDING', (0, 0), (-1, -1), 3),
+        ]))
+
+        cam_box_data = [
+            [Paragraph("<b>Atención IA (Grad-CAM)</b>", ParagraphStyle('Cap2', parent=body_style, fontSize=8, alignment=TA_CENTER))],
+            [gradcam_element]
+        ]
+        cam_box = Table(cam_box_data, colWidths=[120])
+        cam_box.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F1F5F9')),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+            ('PADDING', (0, 0), (-1, -1), 3),
+        ]))
+
+        combined_data = [[metrics_table, img_box, cam_box]]
+        combined_table = Table(combined_data, colWidths=[280, 125, 125])
+        combined_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (1, 0), (-1, 0), 4),
+        ]))
+        story.append(combined_table)
+    elif image_element:
         metrics_table = Table(metrics_table_data, colWidths=[150, 220])
         metrics_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),

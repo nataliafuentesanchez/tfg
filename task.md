@@ -2,6 +2,15 @@
 
 ## En curso
 
+- [ ] Fase 17 - Interpretabilidad Visual con Grad-CAM (XAI)
+  - [x] Especificación clínica y adversarial review formalizada en SDD
+  - [x] Registro inicial en `docs/diario_codigo.md` (Día 15) e `implementation_plan.md`
+  - [ ] Implementación de `app/services/gradcam_service.py` (hooks PyTorch en `layer4`, heatmap normalizado y blending JET)
+  - [ ] Integración en esquema `AnalysisResult` y `InferenceService.analyze()`
+  - [ ] Incorporación de la comparativa original vs Grad-CAM en el informe PDF de ReportLab (`app/services/pdf_service.py`)
+  - [ ] Visualización interactiva en frontend (toggle/selector de atención IA en `app.js` y estilos CSS)
+  - [ ] Suite de pruebas automatizadas (`tests/test_gradcam.py`) y verificación de no regresión (22/22 tests previos)
+
 - [x] Fase 3 - Construccion
   - [x] API FastAPI (`/`, `/health`, `/analyze`, `/download-report-pdf`)
   - [x] Motor baseline de analisis dermatologico

@@ -22,6 +22,7 @@ import torch.nn as nn
 from torchvision import transforms, models
 
 from app.schemas.prediction import AnalysisResponse
+from app.services.gradcam_service import GradCAMService
 
 # Configuracion de modelo CNN y rutas
 _MODEL_PATH = os.path.join(os.getcwd(), "models", "best_skin_cnn.pth")
@@ -595,6 +596,26 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
                 recommendation=info["recommendation"]
             )
 
+            # Generación de Interpretabilidad Visual Grad-CAM
+            gradcam_b64 = None
+            try:
+                classes_list = _cnn_classes_info.get("classes", []) if _cnn_classes_info else []
+                target_idx = classes_list.index(detected_dx) if detected_dx in classes_list else None
+                
+                # Tensor de entrada para Grad-CAM
+                pil_img = Image.open(BytesIO(content)).convert("RGB")
+                input_tensor = _eval_transform(pil_img).unsqueeze(0).to(_cnn_device)
+                
+                gradcam_svc = GradCAMService(model)
+                gradcam_b64 = gradcam_svc.generate_gradcam_overlay_base64(
+                    input_tensor=input_tensor,
+                    original_image_bgr=image,
+                    target_class_idx=target_idx
+                )
+                gradcam_svc.remove_hooks()
+            except Exception as cam_err:
+                print(f"Aviso en cálculo Grad-CAM ({cam_err}), omitiendo mapa...")
+
             return AnalysisResponse(
                 filename=filename or "imagen_subida",
                 primary_label=info["primary_internal"],
@@ -607,7 +628,8 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
                 user_report=user_report_text,
                 disclaimer="Herramienta de cribado y apoyo a la decisión clínica por IA. No sustituye el diagnóstico anatomopatológico.",
                 abcde_analysis=abcde_features,
-                image_base64=image_b64_str
+                image_base64=image_b64_str,
+                gradcam_image_base64=gradcam_b64
             )
         except Exception as e:
             print(f"Aviso en inferencia CNN ({e}), usando fallback...")
@@ -649,6 +671,7 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
         user_report=user_report_text,
         disclaimer="Herramienta de cribado y apoyo a la decisión clínica por IA. No sustituye el diagnóstico anatomopatológico.",
         abcde_analysis=abcde_features,
-        image_base64=image_b64_str
+        image_base64=image_b64_str,
+        gradcam_image_base64=None
     )
 

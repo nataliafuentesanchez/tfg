@@ -2517,6 +2517,25 @@ Para maximizar la detección de melanoma sin disparar falsos positivos, se plani
 | **Resolución de Conflictos Macro vs. Dermatoscopia** | **100%** 🟢 | Dermatofibromas, manchas, queratosis y melanomas de extensión superficial (`superficial-0018`, `b.jpeg`) clasificados con precisión. |
 | **Cobertura de Pruebas Automatizadas** | **22 / 22 (100%)** 🟢 | Verificación formal SDD completada. |
 
+---
+
+## 🗓️ Día 15 (2026-11-05): Especificación e Inicio de Interpretabilidad Visual con Grad-CAM (XAI)
+
+### 15.1 Contexto y Necesidad Clínica (TFG Ingeniería de la Salud)
+- **Motivación:** En sistemas de Inteligencia Artificial aplicados a la medicina, la opacidad de los modelos de Deep Learning ("caja negra") constituye una de las principales barreras de adopción y un requisito estricto en marcos regulatorios (como la Ley de IA de la UE y MDR).
+- **Objetivo:** Complementar el análisis morfológico ABCDE existente con **Grad-CAM (Gradient-weighted Class Activation Mapping)**. Esta técnica proyecta los gradientes de la última capa convolucional (`layer4` de la ResNet) hacia atrás para identificar qué regiones anatómicas o píxeles concretos de la imagen fueron decisivos para que la red neuronal emitiera la probabilidad diagnóstica de la patología detectada.
+- **Canales de Exposición:**
+  1. **En la UI de OLIVIA:** Selector interactivo ("Ver Mapa de Atención IA") para que el paciente o usuario pueda superponer el mapa de calor sobre la foto original.
+  2. **En el Informe Clínico PDF:** Panel comparativo con la imagen de la lesión y el mapa térmico Grad-CAM junto a su leyenda médica.
+
+### 15.2 Arquitectura y Componentes Planificados
+- `app/services/gradcam_service.py`: Módulo desacoplado con hooks directos a `layer4`, interpolación bilineal y fusión térmica con `COLORMAP_JET`.
+- `app/services/inference_service.py` & `app/schemas/analysis.py`: Conexión directa en `/analyze` devolviendo el mapa térmico en Base64 sin degradar la latencia.
+- `app/services/pdf_service.py`: Maquetación de la imagen original frente a Grad-CAM en la cabecera del informe.
+- `app/static/js/app.js` & CSS: Toggle y visualizador interactivo en la tarjeta diagnóstica de Olivia.
+- `tests/test_gradcam.py`: Suite de validación de interpretabilidad.
+
+
 
 
 
