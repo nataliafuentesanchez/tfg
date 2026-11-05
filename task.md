@@ -168,10 +168,19 @@
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-11-02 (Día 14)
-- **Estado exacto:** Se han corregido con éxito las dos anomalías clínicas de falsos positivos reportadas por la usuaria en fotografías convencionales de piel:
-  1. Los dermatofibromas (`df`) ya no se confunden con melanoma; se preserva su clasificación como benignos / SANO con riesgo bajo.
-  2. Las manchas seniles/léntigos o lunares en piel madura/arrugada ya no disparan la regla de melanoma macro por la rugosidad de la piel circundante; se clasifican correctamente como Nevus o Queratosis Benigna.
-  3. Todos los melanomas reales (`433595.jpeg`, `15267-m.jpg`, `MELANOMA.jpeg`, `ddddd.jpeg`, etc.) retienen su detección al 100% como Melanoma / GRAVE.
-- **Métricas:** Triage Clínico Binario: 88.5% – 91.5% de fiabilidad, Especificidad en benignos: 94.8%, Suite de tests: 22/22 pasando (100%).
-- **Próximo paso:** Implementar mapas de interpretabilidad Grad-CAM o preparar la sección de experimentación de la memoria del TFG.
+- **Fecha:** 2026-11-05 (Día 15)
+- **Versión Actual:** `v0.3.1-dev` (Fase SDD: `/build` en curso)
+- **Estado exacto:** Se ha implementado el motor Grad-CAM completo (backend + integración en inferencia + PDF). Falta la parte de frontend (toggle visual en `app.js` y CSS) y la documentación de cierre.
+- **Archivos creados/modificados en esta sesión:**
+  1. `app/services/gradcam_service.py` — NUEVO: Servicio Grad-CAM con hooks en `layer4`, heatmap normalizado y overlay JET base64.
+  2. `app/schemas/prediction.py` — Campo `gradcam_image_base64` añadido al schema `AnalysisResponse`.
+  3. `app/services/inference_service.py` — Integración: tras el diagnóstico CNN se genera el mapa Grad-CAM y se adjunta en la respuesta.
+  4. `app/services/pdf_service.py` — Layout triple: métricas + foto original + mapa Grad-CAM lado a lado en el informe PDF.
+  5. `tests/test_gradcam.py` — NUEVO: 2 tests (heatmap unitario + integración con `/analyze`).
+  6. `task.md`, `implementation_plan.md`, `docs/diario_codigo.md` — Documentación SDD actualizada.
+- **Estado de Tests:** 24/24 pasando (100%) — 22 previos + 2 nuevos de Grad-CAM.
+- **Próximo paso exacto:**
+  1. Añadir el toggle visual "🔍 Ver Mapa de Atención IA (Grad-CAM)" en `app/static/js/app.js` dentro de `appendBotResultCard()`, mostrando la imagen `gradcam_image_base64` del response.
+  2. Añadir los estilos CSS correspondientes en `app/static/css/style.css`.
+  3. Actualizar `CHANGELOG.md` con entrada v0.3.1 y `docs/SPECIFICATIONS.md` marcando Grad-CAM como [CONFIRMADO].
+  4. Cerrar el Día 15 en `docs/diario_codigo.md` con los resultados finales.
