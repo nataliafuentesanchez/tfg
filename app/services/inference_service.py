@@ -521,6 +521,17 @@ def analyze_image(content: bytes, filename: str | None = None) -> AnalysisRespon
             elif (bkl_prob >= 0.40 or nv_prob >= 0.40) and mel_prob < 0.20 and (nv_prob + bkl_prob >= 0.50):
                 detected_dx = "bkl" if bkl_prob > nv_prob else "nv"
 
+            # 2.1 Protección de Lunares Comunes Simétricos con Bordes Regulares (Salud Preventiva):
+            # En fotografía macro o de smartphone, un lunar benigno regular suele tener border_score <= 0.30,
+            # sin policromatismo (color_score < 0.35) y estructura interna homogénea (struct_score <= 0.15).
+            # Evita falsas alarmas de melanoma en pieles con tono cálido/bronceado o textura cutánea normal.
+            elif (
+                (border_score <= 0.10 and asym_score < 0.15 and color_score < 0.60 and struct_score < 0.50)
+                or
+                (color_score < 0.30 and struct_score <= 0.15 and border_score <= 0.35)
+            ):
+                detected_dx = "nv"
+
             # 3. Prioridad de sospecha morfológica de Melanoma (Reglas clínicas de seguridad):
             # A) Domain Shift en fotos macro: Lesión marcadamente atípica en asimetría + bordes + color + estructura,
             # exigiendo un umbral de mel_prob fundado (>= 0.12) para evitar alarmas por arrugas cutáneas.

@@ -262,5 +262,14 @@ def test_clinical_calibration_dermatofibromas_and_elderly_spots() -> None:
             assert res_mel.severity == "grave"
             assert "Melanoma" in res_mel.likely_cause
 
+    # 4. Caso sintético de lunar común regular benigno (border=0, asym<0.15)
+    img_regular = np.full((300, 300, 3), (180, 200, 230), dtype=np.uint8)
+    cv2.circle(img_regular, (150, 150), 30, (60, 80, 110), -1)
+    _, enc_regular = cv2.imencode(".jpg", img_regular)
+    res_regular = analyze_image(enc_regular.tobytes(), filename="regular_mole.jpg")
+    assert res_regular.primary_label == "sano"
+    assert "Nevus" in res_regular.likely_cause
+
+
 
 

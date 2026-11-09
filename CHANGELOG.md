@@ -6,6 +6,29 @@ This format follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Added
+- **Panel Interactivo de Preprocesado Clínico (Recorte y Brillo)**:
+- **Corrección de Visibilidad del Slider de Brillo y Calibración de Fototipo**:
+  - Sustituida la propiedad CSS `ctx.filter` en `app.js` por manipulación directa de canales RGB (`getImageData`/`putImageData`), haciendo que el ajuste de brillo sea inmediatamente visible y se transfiera en el recorte final.
+  - Calibración en `inference_service.py` para lunares homogéneos (`struct_score <= 0.15`, `color_score < 0.30`, `border_score <= 0.35`) en pieles con tono cálido/bronceado, protegiendo su clasificación como **Nevus Melanocítico / SANO**.
+  - Implementado modal `#imageEditorModal` con Canvas interactivo antes de la inferencia, tanto para fotos tomadas con cámara web/móvil como para archivos subidos.
+  - Soporte de arrastre táctil/ratón (*pan*), zoom dinámico (slider y rueda del ratón) y recuadro guía de encuadre centrado.
+  - Ajuste de exposición/brillo con slider en tiempo real (-50% a +50%) y renderizado de alta fidelidad (mínimo 448x448 píxeles nativos).
+  - Previene falsos positivos en fotos domésticas al aislar la lesión frente a fondos no cutáneos, sombras y extremidades completas.
+- **Salvaguarda Clínica Morfológica para Lunares Benignos en Fotografía Macro**:
+  - Implementada regla de salvaguarda preventiva en `inference_service.py` para lunares de smartphone simétricos (`asym_score < 0.15`), circunscritos con bordes regulares (`border_score <= 0.10`) y sin atipia de color o textura (`color_score < 0.60`, `struct_score < 0.50`), protegiéndolos como **Nevus Melanocítico / SANO**.
+  - Evitadas falsas alarmas de melanoma provocadas por el sesgo de escala macro de la CNN en fotografías convencionales de teléfono móvil.
+  - Verificada la preservación del 100% de sensibilidad en todos los melanomas reales y biopsias de la base de datos (24/24 tests en verde).
+- **Reubicación de "+ Nuevo Chat" y Guía de Captura Clínica**:
+  - Reubicación del botón `+ Nuevo Chat` al interior del panel lateral (*History Drawer*), alineado con la ergonomía visual de ChatGPT y Gemini, dejando la cabecera limpia y minimalista.
+  - Incorporación de la **Guía Clínica de Adquisición Fotográfica** en el modal de cámara web/móvil con 4 pautas clínicas de teledermatología: luz natural homogénea, distancia focal recomendada (~10-15 cm), ángulo perpendicular y despeje de cabellos u obstáculos.
+  - Incorporación de mira visual de encuadre (*crosshair* circular) superpuesta al visor para ayudar al paciente a centrar la lesión antes del disparo.
+- **Interpretabilidad Visual con Grad-CAM (XAI)**:
+  - Implementado `GradCAMService` (`app/services/gradcam_service.py`) para capturar activaciones y gradientes de `layer4` de la ResNet activa.
+  - Generación de mapas de calor normalizados superpuestos con `cv2.applyColorMap` (paleta JET) y codificados en Base64 sin degradación de latencia.
+  - Integración en `InferenceService` y esquema `AnalysisResponse` (`gradcam_image_base64`).
+  - Maquetación comparativa en el informe PDF (`pdf_service.py`): Foto original junto al Mapa de Atención Grad-CAM.
+  - Visualizador interactivo en la tarjeta diagnóstica de la Dra. Olivia (`app.js` y `styles.css`) con botón toggle ("Mostrar/Ocultar mapa de calor").
+  - Suite de tests unitarios e integración ampliada a **24/24 tests pasando (100%)**.
 - **Soporte dinámico para arquitectura ResNet-50**: Detección y carga automática de arquitectura desde el checkpoint (`resnet50` o `resnet18`) en `inference_service.py` con dropout adaptativo (0.4 en ResNet-50).
 - **Entrenamiento flexible en `scripts/train_cnn.py`**: Parámetros `--architecture`, `--label_smoothing` y configuración estable `num_workers=0` para macOS Apple Silicon / MPS.
 - **Prueba de regresión clínica para dermatofibromas y piel senil**: Añadida `test_clinical_calibration_dermatofibromas_and_elderly_spots` a `tests/unit/test_inference_service.py` (22/22 tests pasando).

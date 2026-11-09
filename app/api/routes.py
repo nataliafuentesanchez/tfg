@@ -74,7 +74,6 @@ def index() -> str:
             </div>
             <div class="chat-header-right">
               <span class="status-pill"><span class="online-dot"></span> En línea</span>
-              <button class="new-chat-btn" id="newChatBtn" title="Abrir nuevo chat">+ Nuevo Chat</button>
               <button class="back-home-btn" id="backToLandingBtn" title="Volver al inicio">⟵ Inicio</button>
             </div>
           </header>
@@ -136,15 +135,105 @@ def index() -> str:
       <div class="camera-modal-backdrop" id="closeCameraBackdrop"></div>
       <div class="camera-modal-content">
         <div class="camera-modal-header">
-          <h3>📷 Cámara en directo</h3>
+          <div class="camera-title-row">
+            <span class="camera-icon">📷</span>
+            <div>
+              <h3>Captura de Lesión Dermatológica</h3>
+              <span class="camera-subtitle">Orientación médica de la Dra. Olivia</span>
+            </div>
+          </div>
           <button class="close-modal-btn" id="closeCameraBtn">&times;</button>
         </div>
+
+        <!-- Guía de Buenas Prácticas Médicas para la Fotografía -->
+        <div class="clinical-capture-tips">
+          <div class="tips-header">
+            <span>💡 Recomendaciones para máxima precisión:</span>
+          </div>
+          <div class="tips-grid">
+            <div class="tip-item">
+              <span class="tip-badge">1</span>
+              <span><strong>Buena luz natural:</strong> Evita reflejos y sombras directas.</span>
+            </div>
+            <div class="tip-item">
+              <span class="tip-badge">2</span>
+              <span><strong>Distancia (~10-15 cm):</strong> Mantén el enfoque nítido sobre la lesión.</span>
+            </div>
+            <div class="tip-item">
+              <span class="tip-badge">3</span>
+              <span><strong>Ángulo perpendicular:</strong> Captura la lesión de frente, centrada.</span>
+            </div>
+            <div class="tip-item">
+              <span class="tip-badge">4</span>
+              <span><strong>Área despejada:</strong> Retira cabellos para no tapar los bordes.</span>
+            </div>
+          </div>
+        </div>
+
         <div class="video-wrapper">
           <video id="webcamVideo" autoplay playsinline muted></video>
           <canvas id="webcamCanvas" style="display: none;"></canvas>
+          <div class="camera-target-crosshair"></div>
         </div>
         <div class="camera-modal-actions">
-          <button class="action-btn btn-camera" id="snapPhotoBtn" type="button">📸 Tomar Foto y Analizar</button>
+          <button class="action-btn btn-camera snap-btn" id="snapPhotoBtn" type="button">📸 Tomar Foto</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL EDITOR: RECORTE (CROP) Y BRILLO ================= -->
+    <div class="editor-modal" id="imageEditorModal" style="display: none;">
+      <div class="editor-modal-backdrop" id="closeEditorBackdrop"></div>
+      <div class="editor-modal-content">
+        <div class="editor-modal-header">
+          <div class="editor-title-row">
+            <span class="editor-icon">✂️</span>
+            <div>
+              <h3>Ajuste Clínico de Imagen</h3>
+              <span class="editor-subtitle">Encuadra la lesión y optimiza la iluminación</span>
+            </div>
+          </div>
+          <button class="close-modal-btn" id="closeEditorBtn">&times;</button>
+        </div>
+
+        <div class="editor-workspace">
+          <div class="editor-canvas-container" id="editorCanvasContainer">
+            <canvas id="editorCanvas"></canvas>
+            <div class="crop-overlay-guide">
+              <div class="crop-box-border"></div>
+              <span class="crop-hint-badge">Área focal de análisis</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controles de Edición -->
+        <div class="editor-controls-bar">
+          <div class="control-group">
+            <label for="brightnessSlider" class="control-label">
+              <span>☀️ Brillo:</span>
+              <span id="brightnessValueLabel" class="control-val-badge">0%</span>
+            </label>
+            <input type="range" id="brightnessSlider" min="-50" max="50" value="0" step="1" class="custom-slider" />
+          </div>
+
+          <div class="control-group">
+            <label for="zoomSlider" class="control-label">
+              <span>🔍 Zoom / Escala:</span>
+              <span id="zoomValueLabel" class="control-val-badge">1.0x</span>
+            </label>
+            <input type="range" id="zoomSlider" min="1.0" max="3.5" value="1.0" step="0.05" class="custom-slider" />
+          </div>
+        </div>
+
+        <div class="editor-help-text">
+          <span>💡 Arrastra la imagen para centrar el lunar en el recuadro y usa el zoom si es necesario.</span>
+        </div>
+
+        <div class="editor-actions">
+          <button class="action-btn btn-cancel-editor" id="cancelEditorBtn" type="button">🔄 Cancelar</button>
+          <button class="action-btn btn-confirm-editor" id="confirmEditorBtn" type="button">
+            <span>✅ Confirmar y Analizar</span>
+          </button>
         </div>
       </div>
     </div>
@@ -165,7 +254,10 @@ def index() -> str:
         </div>
         
         <div class="drawer-actions">
-          <button class="action-btn btn-new-chat-drawer" id="drawerNewChatBtn" type="button">+ Nuevo Chat</button>
+          <button class="action-btn btn-new-chat-drawer" id="drawerNewChatBtn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Nuevo Chat
+          </button>
           <button class="action-btn btn-home-drawer" id="drawerHomeBtn" type="button">⟵ Inicio</button>
         </div>
 

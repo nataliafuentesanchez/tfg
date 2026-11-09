@@ -32,6 +32,29 @@ const webcamVideo = document.getElementById("webcamVideo");
 const webcamCanvas = document.getElementById("webcamCanvas");
 const snapPhotoBtn = document.getElementById("snapPhotoBtn");
 
+// Modal de Edición (Recorte y Brillo)
+const imageEditorModal = document.getElementById("imageEditorModal");
+const closeEditorBtn = document.getElementById("closeEditorBtn");
+const closeEditorBackdrop = document.getElementById("closeEditorBackdrop");
+const cancelEditorBtn = document.getElementById("cancelEditorBtn");
+const confirmEditorBtn = document.getElementById("confirmEditorBtn");
+const editorCanvas = document.getElementById("editorCanvas");
+const editorCanvasContainer = document.getElementById("editorCanvasContainer");
+const brightnessSlider = document.getElementById("brightnessSlider");
+const brightnessValueLabel = document.getElementById("brightnessValueLabel");
+const zoomSlider = document.getElementById("zoomSlider");
+const zoomValueLabel = document.getElementById("zoomValueLabel");
+
+let editorImg = new Image();
+let editorScale = 1.0;
+let editorBrightness = 0;
+let editorPanX = 0;
+let editorPanY = 0;
+let isPanning = false;
+let startPanX = 0;
+let startPanY = 0;
+let pendingFileName = "lesion.jpg";
+
 // Panel Lateral (Cerebro e Historial)
 const openHistoryDrawerBtn = document.getElementById("openHistoryDrawerBtn");
 const historyDrawer = document.getElementById("historyDrawer");
@@ -455,7 +478,7 @@ if (fileInputHidden) {
   fileInputHidden.addEventListener("change", (e) => {
     if (!e.target.files || !e.target.files.length) return;
     const file = e.target.files[0];
-    processSelectedImage(file);
+    openImageEditor(file);
   });
 }
 
@@ -501,8 +524,213 @@ if (snapPhotoBtn) {
     webcamCanvas.toBlob((blob) => {
       closeWebcam();
       const capturedFile = new File([blob], "captura_camara.jpg", { type: "image/jpeg" });
-      processSelectedImage(capturedFile);
-    }, "image/jpeg", 0.92);
+      openImageEditor(capturedFile);
+    }, "image/jpeg", 0.95);
+  });
+}
+
+// ==========================================
+// EDITOR INTERACTIVO: RECORTE Y BRILLO
+// ==========================================
+function openImageEditor(file) {
+  pendingFileName = file.name || "captura.jpg";
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    editorImg = new Image();
+    editorImg.onload = () => {
+      editorScale = 1.0;
+      editorBrightness = 0;
+      editorPanX = 0;
+      editorPanY = 0;
+      if (brightnessSlider) brightnessSlider.value = 0;
+      if (brightnessValueLabel) brightnessValueLabel.textContent = "0%";
+      if (zoomSlider) zoomSlider.value = 1.0;
+      if (zoomValueLabel) zoomValueLabel.textContent = "1.0x";
+      
+      initEditorCanvas();
+      if (imageEditorModal) imageEditorModal.style.display = "flex";
+    };
+    editorImg.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function closeImageEditor() {
+  if (imageEditorModal) imageEditorModal.style.display = "none";
+  if (fileInputHidden) fileInputHidden.value = "";
+}
+
+if (closeEditorBtn) closeEditorBtn.addEventListener("click", closeImageEditor);
+if (closeEditorBackdrop) closeEditorBackdrop.addEventListener("click", closeImageEditor);
+if (cancelEditorBtn) cancelEditorBtn.addEventListener("click", closeImageEditor);
+
+function initEditorCanvas() {
+  if (!editorCanvas || !editorImg.width) return;
+  const containerSize = editorCanvasContainer ? editorCanvasContainer.clientWidth || 320 : 320;
+  editorCanvas.width = containerSize;
+  editorCanvas.height = containerSize;
+  renderEditor();
+}
+
+function renderEditor() {
+  if (!editorCanvas || !editorImg.width) return;
+  const ctx = editorCanvas.getContext("2d");
+  const cw = editorCanvas.width;
+  const ch = editorCanvas.height;
+
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.save();
+
+  // Calcular ajuste para cubrir el recuadro (cover)
+  const baseScale = Math.max(cw / editorImg.width, ch / editorImg.height);
+  const currentScale = baseScale * editorScale;
+
+  const drawW = editorImg.width * currentScale;
+  const drawH = editorImg.height * currentScale;
+
+  const cx = cw / 2 + editorPanX;
+  const cy = ch / 2 + editorPanY;
+
+  ctx.drawImage(editorImg, cx - drawW / 2, cy - drawH / 2, drawW, drawH);
+
+  // Aplicar ajuste de brillo pixel a pixel directo (100% compatible con todos los navegadores)
+  if (editorBrightness !== 0) {
+    const imgData = ctx.getImageData(0, 0, cw, ch);
+    const d = imgData.data;
+    const factor = Number(editorBrightness) * 1.8; // escala perceptible [-90, +90]
+    for (let i = 0; i < d.length; i += 4) {
+      d[i] = Math.min(255, Math.max(0, d[i] + factor));
+      d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + factor));
+      d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + factor));
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  ctx.restore();
+}
+
+// Control de Brillo
+if (brightnessSlider) {
+  brightnessSlider.addEventListener("input", (e) => {
+    editorBrightness = Number(e.target.value);
+    if (brightnessValueLabel) {
+      brightnessValueLabel.textContent = (editorBrightness > 0 ? "+" : "") + editorBrightness + "%";
+    }
+    renderEditor();
+  });
+}
+
+// Control de Zoom
+if (zoomSlider) {
+  zoomSlider.addEventListener("input", (e) => {
+    editorScale = Number(e.target.value);
+    if (zoomValueLabel) {
+      zoomValueLabel.textContent = editorScale.toFixed(1) + "x";
+    }
+    renderEditor();
+  });
+}
+
+// Soporte de Arrastre (Pan) con ratón y táctil
+if (editorCanvasContainer) {
+  const onPointerDown = (clientX, clientY) => {
+    isPanning = true;
+    startPanX = clientX - editorPanX;
+    startPanY = clientY - editorPanY;
+  };
+
+  const onPointerMove = (clientX, clientY) => {
+    if (!isPanning) return;
+    editorPanX = clientX - startPanX;
+    editorPanY = clientY - startPanY;
+    renderEditor();
+  };
+
+  const onPointerUp = () => {
+    isPanning = false;
+  };
+
+  editorCanvasContainer.addEventListener("mousedown", (e) => onPointerDown(e.clientX, e.clientY));
+  window.addEventListener("mousemove", (e) => onPointerMove(e.clientX, e.clientY));
+  window.addEventListener("mouseup", onPointerUp);
+
+  editorCanvasContainer.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) {
+      onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener("touchmove", (e) => {
+    if (e.touches.length === 1) {
+      onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener("touchend", onPointerUp);
+
+  // Zoom con rueda de ratón sobre el canvas
+  editorCanvasContainer.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = e.deltaY * -0.002;
+    editorScale = Math.min(3.5, Math.max(1.0, editorScale + delta));
+    if (zoomSlider) zoomSlider.value = editorScale;
+    if (zoomValueLabel) zoomValueLabel.textContent = editorScale.toFixed(1) + "x";
+    renderEditor();
+  }, { passive: false });
+}
+
+// Confirmar y Analizar: Generar recorte en alta resolución
+if (confirmEditorBtn) {
+  confirmEditorBtn.addEventListener("click", () => {
+    if (!editorImg.width) return;
+
+    // Crear canvas de salida de alta fidelidad (mínimo 448x448 para análisis)
+    const outCanvas = document.createElement("canvas");
+    const outSize = Math.max(448, Math.min(editorImg.width, editorImg.height));
+    outCanvas.width = outSize;
+    outCanvas.height = outSize;
+    const outCtx = outCanvas.getContext("2d");
+
+    outCtx.filter = `brightness(${100 + Number(editorBrightness)}%)`;
+
+    const cw = editorCanvas.width;
+    const ch = editorCanvas.height;
+    const baseScale = Math.max(cw / editorImg.width, ch / editorImg.height);
+    const currentScale = baseScale * editorScale;
+
+    const drawW = editorImg.width * currentScale;
+    const drawH = editorImg.height * currentScale;
+    const cx = cw / 2 + editorPanX;
+    const cy = ch / 2 + editorPanY;
+
+    // Mapear al tamaño de salida
+    const ratio = outSize / cw;
+    outCtx.drawImage(
+      editorImg,
+      (cx - drawW / 2) * ratio,
+      (cy - drawH / 2) * ratio,
+      drawW * ratio,
+      drawH * ratio
+    );
+
+    // Aplicar el mismo ajuste de brillo pixel a pixel al resultado final
+    if (editorBrightness !== 0) {
+      const outImgData = outCtx.getImageData(0, 0, outSize, outSize);
+      const od = outImgData.data;
+      const factor = Number(editorBrightness) * 1.8;
+      for (let i = 0; i < od.length; i += 4) {
+        od[i] = Math.min(255, Math.max(0, od[i] + factor));
+        od[i + 1] = Math.min(255, Math.max(0, od[i + 1] + factor));
+        od[i + 2] = Math.min(255, Math.max(0, od[i + 2] + factor));
+      }
+      outCtx.putImageData(outImgData, 0, 0);
+    }
+
+    outCanvas.toBlob((blob) => {
+      closeImageEditor();
+      const croppedFile = new File([blob], pendingFileName, { type: "image/jpeg" });
+      processSelectedImage(croppedFile);
+    }, "image/jpeg", 0.94);
   });
 }
 
@@ -593,6 +821,16 @@ function appendBotErrorMessage(text) {
     </div>
   `;
   dynamicChatEntries.appendChild(msgRow);
+  scrollToBottom();
+}
+
+function toggleGradCamViewer(btn) {
+  const container = btn.closest(".gradcam-section-block")?.querySelector(".gradcam-container");
+  if (!container) return;
+  const isHidden = container.style.display === "none";
+  container.style.display = isHidden ? "block" : "none";
+  const label = btn.querySelector("span") || btn;
+  label.textContent = isHidden ? "Ocultar mapa de calor" : "Mostrar mapa de calor";
   scrollToBottom();
 }
 
@@ -720,6 +958,32 @@ function appendBotResultCard(data) {
         <div class="section-heading">RECOMENDACIÓN Y DERIVACIÓN</div>
         <div class="section-text" style="color: #f1f5f9; font-weight: 500;">${recommendation}</div>
       </div>
+
+      ${data.gradcam_image_base64 ? `
+      <div class="section-block gradcam-section-block">
+        <div class="gradcam-header-row">
+          <div class="section-heading">🔍 EXPLICABILIDAD IA (GRAD-CAM)</div>
+          <button type="button" class="gradcam-toggle-btn" onclick="toggleGradCamViewer(this)">
+            <span>Mostrar mapa de calor</span>
+          </button>
+        </div>
+        <div class="gradcam-container" style="display: none;">
+          <div class="gradcam-visual-wrapper">
+            <div class="gradcam-image-box">
+              <span class="gradcam-img-caption">Foto original</span>
+              <img src="${data.image_base64 || ''}" alt="Foto original" class="gradcam-thumb" />
+            </div>
+            <div class="gradcam-image-box">
+              <span class="gradcam-img-caption">Zonas de interés IA</span>
+              <img src="${data.gradcam_image_base64}" alt="Mapa Grad-CAM" class="gradcam-thumb gradcam-active-thumb" />
+            </div>
+          </div>
+          <p class="gradcam-description-text">
+            Este mapa de calor térmico (Grad-CAM) resalta en tonos cálidos (rojo/amarillo) las regiones morfológicas que más influyeron en la activación de la red neuronal para este diagnóstico.
+          </p>
+        </div>
+      </div>
+      ` : ''}
 
       <button class="pdf-download-interactive-btn" type="button" onclick="triggerPdfDownload()">
         <span>📥 ¿Deseas descargar tu informe clínico completo en PDF?</span>

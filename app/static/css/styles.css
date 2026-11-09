@@ -549,6 +549,87 @@ html, body {
   line-height: 1.5;
 }
 
+/* Sección e interactividad Grad-CAM */
+.gradcam-section-block {
+  border-left-color: #38bdf8 !important;
+  background: rgba(14, 165, 233, 0.03);
+}
+
+.gradcam-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gradcam-toggle-btn {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gradcam-toggle-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+.gradcam-container {
+  margin-top: 10px;
+  animation: fadeIn 0.3s ease;
+}
+
+.gradcam-visual-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.gradcam-image-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.gradcam-img-caption {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.gradcam-thumb {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.gradcam-active-thumb {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
+}
+
+.gradcam-description-text {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-top: 6px;
+  font-style: italic;
+}
+
 /* Botón Descarga PDF Clínico */
 .pdf-download-interactive-btn {
   width: 100%;
@@ -695,7 +776,7 @@ html, body {
 }
 
 /* ==========================================
-   MODAL DE CÁMARA WEB
+   MODAL DE CÁMARA (RESPONSIVE) Y GUÍA CLÍNICA
    ========================================== */
 .camera-modal {
   position: fixed;
@@ -713,22 +794,23 @@ html, body {
   position: absolute;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
 }
 
 .camera-modal-content {
   position: relative;
-  width: 90%;
-  max-width: 480px;
-  background: #111827;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 20px;
+  width: 92%;
+  max-width: 520px;
+  background: #0f172a;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 20px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   z-index: 101;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7);
 }
 
 .camera-modal-header {
@@ -737,23 +819,103 @@ html, body {
   align-items: center;
 }
 
+.camera-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.camera-icon {
+  font-size: 1.4rem;
+}
+
+.camera-title-row h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.camera-subtitle {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  display: block;
+}
+
+/* Guía clínica de captura */
+.clinical-capture-tips {
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.tips-header {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+.tip-badge {
+  background: rgba(14, 165, 233, 0.25);
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 0.72rem;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 .close-modal-btn {
   background: none;
   border: none;
   color: #94a3b8;
   font-size: 1.5rem;
   cursor: pointer;
+  line-height: 1;
 }
 
 .video-wrapper {
+  position: relative;
   width: 100%;
   height: 280px;
   background: #000;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #webcamVideo {
@@ -762,9 +924,258 @@ html, body {
   object-fit: cover;
 }
 
+/* Mira de encuadre en el visor de cámara */
+.camera-target-crosshair {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border: 2px dashed rgba(56, 189, 248, 0.65);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
 .camera-modal-actions {
   display: flex;
   justify-content: center;
+}
+
+.snap-btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);
+}
+
+.snap-btn:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  transform: translateY(-1px);
+}
+
+/* ==========================================
+   MODAL DE EDICIÓN CLÍNICA: RECORTE Y BRILLO
+   ========================================== */
+.editor-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-modal-backdrop {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(10px);
+}
+
+.editor-modal-content {
+  position: relative;
+  width: 92%;
+  max-width: 500px;
+  background: #0f172a;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 151;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.75);
+}
+
+.editor-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.editor-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editor-icon {
+  font-size: 1.4rem;
+}
+
+.editor-title-row h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.editor-subtitle {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  display: block;
+}
+
+.editor-workspace {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.editor-canvas-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  max-width: 80vw;
+  max-height: 80vw;
+  background: #020617;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: grab;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  touch-action: none;
+}
+
+.editor-canvas-container:active {
+  cursor: grabbing;
+}
+
+#editorCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Guía de encuadre en el editor */
+.crop-overlay-guide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 16px rgba(15, 23, 42, 0.6);
+}
+
+.crop-box-border {
+  width: 78%;
+  height: 78%;
+  border: 2px solid #38bdf8;
+  border-radius: 12px;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+}
+
+.crop-hint-badge {
+  position: absolute;
+  bottom: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Barra de controles: sliders */
+.editor-controls-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.control-val-badge {
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.custom-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+.editor-help-text {
+  font-size: 0.76rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-cancel-editor {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-editor:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.btn-confirm-editor {
+  flex: 1.5;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-editor:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 600px) {

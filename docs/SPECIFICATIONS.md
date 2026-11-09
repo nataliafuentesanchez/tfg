@@ -38,6 +38,7 @@
 - [x] **Recomendación de derivación:** [CONFIRMADO] Sugerir derivación al dermatólogo cuando se detecte riesgo clínico.
   - **Criterio de aceptación:** Si el caso es `grave` o `maligno_probable`, el sistema marca prioridad alta de derivación.
 - [x] **Evaluación ABCDE (Explainability / XAI):** [CONFIRMADO] Análisis morfológico de Asimetría, Bordes, Color, Diámetro y Estructura/Evolución con scores numéricos y descripciones clínicas.
+- [x] **Mapas de Interpretabilidad Visual Grad-CAM (XAI Convolucional):** [CONFIRMADO] Generación de mapas térmicos de activación en la última capa convolucional (`layer4`), integrados en la UI de la Dra. Olivia con visualizador interactivo y en el informe clínico oficial PDF.
 - [x] **Informe PDF clínico descargable:** [CONFIRMADO] El usuario puede descargar un informe formal en PDF con imagen de la lesión, diagnóstico estructurado y recomendación.
 - [x] **Agente Conversacional OLIVIA (Google Gemini API):** [CONFIRMADO] Chatbot conversacional con la API de Google Gemini (`gemini-3.6-flash`).
   - **Perfil de Personalidad:** Médica dermatóloga joven (~30 años), muy agradable, gentil, simpática y profesional. Transmite calidez, calma y confianza.
@@ -49,8 +50,13 @@
   - **Implementación:** `localStorage` + `buildBrainMemorySummary()` → campo `brain_memory` en `ChatMessageRequest` → inyectado en prompt de Gemini.
   - **Criterio de aceptación:** En una nueva sesión, si hay sesiones previas, Olivia puede mostrar continuidad natural en la conversación.
 - [x] **Panel Historial de Chats (Drawer Lateral):** [CONFIRMADO] Panel lateral deslizante (slide-in desde la izquierda, estilo ChatGPT/Gemini) accesible mediante el avatar de Olivia en la cabecera.
-  - **Contenido:** Lista de sesiones anteriores con título, fecha y número de mensajes. Botones de "Nuevo Chat" e "Inicio" dentro del panel.
-  - **Criterio de aceptación:** El panel se abre con animación suave, muestra el historial y permite restaurar cualquier sesión.
+  - **Contenido:** Lista de sesiones anteriores con título, fecha y número de mensajes. Botón prominente de "+ Nuevo Chat" (reubicado desde la cabecera) y botón de "Inicio" dentro del panel.
+  - **Criterio de aceptación:** El panel se abre con animación suave, muestra el historial y permite restaurar cualquier sesión o iniciar un nuevo chat limpio.
+- [x] **Guía Clínica de Adquisición Fotográfica Médica:** [CONFIRMADO] Modal de cámara dermatológica enriquecido con recomendaciones asistenciales de la Dra. Olivia (buena luz natural, distancia ~10-15 cm, enfoque nítido perpendicular y despeje de cabellos) y mira de encuadre visual para centrar la lesión.
+- [x] **Panel de Preprocesado Fotográfico Asistido (Recorte y Brillo):** [CONFIRMADO] Editor interactivo en Canvas antes de enviar al modelo:
+  - **Herramienta de Recorte (Crop & Pan):** Desplazamiento y zoom dinámico para encuadrar la lesión en la escala adecuada, mitigando el ruido de extremidades completas y fondos distractores.
+  - **Ajuste de Brillo:** Slider de compensación lumínica en tiempo real (-50% a +50%) para corregir tomas subexpuestas.
+  - **Exportación de Alta Fidelidad:** Remuestreo a JPEG sin compresión destructiva conservando la resolución morfológica nativa.
 - [x] **Triage Autónomo de Imágenes No Profesionales:** [CONFIRMADO] El sistema analiza imágenes tomadas con teléfono móvil o descargadas de internet sin depender del nombre del archivo.
   - **Mecanismo:** ROI Focal Crop + ABCDE multi-criterio + penalización de predicciones benignas de la CNN cuando el ABCDE contradice.
 
@@ -70,7 +76,7 @@
 
 - [x] [CONFIRMADO] Diagnóstico médico definitivo o sustitución del criterio dermatológico.
 - [x] [CONFIRMADO] Integración hospitalaria real (HIS/EHR).
-- [ ] [PENDIENTE] Mapas de atención visual Grad-CAM (previsto para v0.3.0).
+- [x] [CONFIRMADO] Mapas de atención visual Grad-CAM (Explicabilidad visual XAI implementada en v0.3.1).
 - [ ] [PENDIENTE] Termografía dermatológica (fase 2 futura).
 - [ ] [PENDIENTE] Publicación en producción con autenticación de usuario.
 

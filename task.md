@@ -2,14 +2,23 @@
 
 ## En curso
 
-- [ ] Fase 17 - Interpretabilidad Visual con Grad-CAM (XAI)
+- [x] Fase 17 - Interpretabilidad Visual con Grad-CAM (XAI)
   - [x] Especificación clínica y adversarial review formalizada en SDD
   - [x] Registro inicial en `docs/diario_codigo.md` (Día 15) e `implementation_plan.md`
-  - [ ] Implementación de `app/services/gradcam_service.py` (hooks PyTorch en `layer4`, heatmap normalizado y blending JET)
-  - [ ] Integración en esquema `AnalysisResult` y `InferenceService.analyze()`
-  - [ ] Incorporación de la comparativa original vs Grad-CAM en el informe PDF de ReportLab (`app/services/pdf_service.py`)
-  - [ ] Visualización interactiva en frontend (toggle/selector de atención IA en `app.js` y estilos CSS)
-  - [ ] Suite de pruebas automatizadas (`tests/test_gradcam.py`) y verificación de no regresión (22/22 tests previos)
+  - [x] Implementación de `app/services/gradcam_service.py` (hooks PyTorch en `layer4`, heatmap normalizado y blending JET)
+  - [x] Integración en esquema `AnalysisResponse` y `InferenceService.analyze()`
+  - [x] Incorporación de la comparativa original vs Grad-CAM en el informe PDF de ReportLab (`app/services/pdf_service.py`)
+  - [x] Visualización interactiva en frontend (toggle/selector de atención IA en `app.js` y estilos `styles.css`)
+  - [x] Suite de pruebas automatizadas (`tests/test_gradcam.py`) y verificación de no regresión (24/24 tests pasando)
+  - [x] Reubicación de "+ Nuevo Chat" en el drawer lateral (estilo ChatGPT/Gemini)
+  - [x] Modal de cámara clínica con guía médica asistencial de captura y mira de encuadre centrado
+  - [x] Calibración de salvaguarda morfológica para lunares benignos en smartphone (24/24 tests pasando)
+
+- [x] Fase 18 - Panel de Preprocesado Fotográfico: Recorte (Crop) y Control de Brillo
+  - [x] Especificación SDD y revisión adversarial
+  - [x] Integración de canvas / herramienta de recorte interactivo previa al análisis
+  - [x] Control deslizante de ajuste de exposición / brillo de la fotografía médica
+  - [x] Pruebas y validación formal de flujo con el servidor activo (24/24 tests pasando)
 
 - [x] Fase 3 - Construccion
   - [x] API FastAPI (`/`, `/health`, `/analyze`, `/download-report-pdf`)
@@ -168,19 +177,16 @@
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-11-05 (Día 15)
-- **Versión Actual:** `v0.3.1-dev` (Fase SDD: `/build` en curso)
-- **Estado exacto:** Se ha implementado el motor Grad-CAM completo (backend + integración en inferencia + PDF). Falta la parte de frontend (toggle visual en `app.js` y CSS) y la documentación de cierre.
-- **Archivos creados/modificados en esta sesión:**
-  1. `app/services/gradcam_service.py` — NUEVO: Servicio Grad-CAM con hooks en `layer4`, heatmap normalizado y overlay JET base64.
-  2. `app/schemas/prediction.py` — Campo `gradcam_image_base64` añadido al schema `AnalysisResponse`.
-  3. `app/services/inference_service.py` — Integración: tras el diagnóstico CNN se genera el mapa Grad-CAM y se adjunta en la respuesta.
-  4. `app/services/pdf_service.py` — Layout triple: métricas + foto original + mapa Grad-CAM lado a lado en el informe PDF.
-  5. `tests/test_gradcam.py` — NUEVO: 2 tests (heatmap unitario + integración con `/analyze`).
-  6. `task.md`, `implementation_plan.md`, `docs/diario_codigo.md` — Documentación SDD actualizada.
-- **Estado de Tests:** 24/24 pasando (100%) — 22 previos + 2 nuevos de Grad-CAM.
-- **Próximo paso exacto:**
-  1. Añadir el toggle visual "🔍 Ver Mapa de Atención IA (Grad-CAM)" en `app/static/js/app.js` dentro de `appendBotResultCard()`, mostrando la imagen `gradcam_image_base64` del response.
-  2. Añadir los estilos CSS correspondientes en `app/static/css/style.css`.
-  3. Actualizar `CHANGELOG.md` con entrada v0.3.1 y `docs/SPECIFICATIONS.md` marcando Grad-CAM como [CONFIRMADO].
-  4. Cerrar el Día 15 en `docs/diario_codigo.md` con los resultados finales.
+- **Fecha:** 2026-11-09 (Día 15 completado)
+- **Versión Actual:** `v0.3.1` (Fase SDD: `/build` e interpretabilidad visual completadas)
+- **Estado exacto:** Especificación e integración de **Grad-CAM (Explicabilidad Visual / XAI)**, **reorganización ergonómica de UI (botón Nuevo Chat al drawer)**, **guía médica de cámara asistida**, **panel interactivo de preprocesado fotográfico (recorte y control de brillo corregido pixel-a-pixel)** y **calibración de fototipo/textura cutánea para lunares benignos homogéneos** completadas al 100%:
+  1. `app/services/gradcam_service.py`: Generador de mapas de activación de clases sobre `layer4` con blending térmico JET y exportación en Base64.
+  2. `app/schemas/prediction.py`: Schema actualizado con campo `gradcam_image_base64`.
+  3. `app/services/inference_service.py`: Inferencia unificada que devuelve tanto el triage morfológico/ABCDE como el mapa de calor de atención convolucional, con salvaguarda morfológica preventiva para lunares benignos regulares.
+  4. `app/services/pdf_service.py`: Informe formal descargable en PDF maquetado con panel comparativo: foto de la lesión y mapa Grad-CAM de atención IA.
+  5. `app/static/js/app.js` y `app/static/css/styles.css`: Visualizador interactivo en la tarjeta diagnóstica con botón toggle `🔍 EXPLICABILIDAD IA (GRAD-CAM)`.
+  6. Reorganización de UI: Botón `+ Nuevo Chat` trasladado al interior del drawer lateral; cabecera limpia; modal de cámara con 4 consejos clínicos de teledermatología y mira de encuadre.
+  7. Panel de Preprocesado Clínico: Modal `#imageEditorModal` con recorte (*crop & pan* táctil y de ratón), control de exposición/brillo en tiempo real y exportación en alta fidelidad antes de la inferencia.
+  8. Documentación SDD sincronizada en `CHANGELOG.md`, `docs/SPECIFICATIONS.md`, `docs/diario_codigo.md` (Día 15) y `task.md`.
+- **Estado de Tests:** 24/24 pasando (100% verde sin regresiones).
+- **Próximo paso:** Implementar el Paso B: **Panel de preprocesado fotográfico con recorte (Crop) y control de brillo** antes de enviar la imagen a la red neuronal.
