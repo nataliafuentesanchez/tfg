@@ -2,6 +2,14 @@
 
 ## En curso
 
+- [x] Fase 19 - Diversidad Cutánea: Estimación de Fototipo Fitzpatrick (ITA) y Prevención Actínica
+  - [x] Especificación SDD y creación de `app/services/phototype_service.py` (cálculo de $L^*, b^*$ en CIELAB y ángulo ITA)
+  - [x] Integración en esquema de datos `AnalysisResponse` (`app/schemas/prediction.py`)
+  - [x] Integración en el motor de inferencia (`app/services/inference_service.py`)
+  - [x] Tarjeta clínica interactiva en el frontend (`app/static/js/app.js` y `app/static/css/styles.css`) con fototipo, ITA, reactividad y consejos solares
+  - [x] Inclusión de la sección de fototipo y pautas de fotoprotección en el informe oficial PDF (`app/services/pdf_service.py`)
+  - [x] Suite de pruebas unitarias (`tests/unit/test_phototype_service.py`) con verificación de no regresión (27/27 tests pasando)
+
 - [x] Fase 17 - Interpretabilidad Visual con Grad-CAM (XAI)
   - [x] Especificación clínica y adversarial review formalizada en SDD
   - [x] Registro inicial en `docs/diario_codigo.md` (Día 15) e `implementation_plan.md`
@@ -12,7 +20,7 @@
   - [x] Suite de pruebas automatizadas (`tests/test_gradcam.py`) y verificación de no regresión (24/24 tests pasando)
   - [x] Reubicación de "+ Nuevo Chat" en el drawer lateral (estilo ChatGPT/Gemini)
   - [x] Modal de cámara clínica con guía médica asistencial de captura y mira de encuadre centrado
-  - [x] Calibración de salvaguarda morfológica para lunares benignos en smartphone (24/24 tests pasando)
+  - [x] Reversión de la regla de salvaguarda morfológica en backend para preservar al 100% las detecciones históricas validadas de Olivia (23/23 tests pasando)
 
 - [x] Fase 18 - Panel de Preprocesado Fotográfico: Recorte (Crop) y Control de Brillo
   - [x] Especificación SDD y revisión adversarial
@@ -177,16 +185,15 @@
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-11-09 (Día 15 completado)
-- **Versión Actual:** `v0.3.1` (Fase SDD: `/build` e interpretabilidad visual completadas)
-- **Estado exacto:** Especificación e integración de **Grad-CAM (Explicabilidad Visual / XAI)**, **reorganización ergonómica de UI (botón Nuevo Chat al drawer)**, **guía médica de cámara asistida**, **panel interactivo de preprocesado fotográfico (recorte y control de brillo corregido pixel-a-pixel)** y **calibración de fototipo/textura cutánea para lunares benignos homogéneos** completadas al 100%:
-  1. `app/services/gradcam_service.py`: Generador de mapas de activación de clases sobre `layer4` con blending térmico JET y exportación en Base64.
-  2. `app/schemas/prediction.py`: Schema actualizado con campo `gradcam_image_base64`.
-  3. `app/services/inference_service.py`: Inferencia unificada que devuelve tanto el triage morfológico/ABCDE como el mapa de calor de atención convolucional, con salvaguarda morfológica preventiva para lunares benignos regulares.
-  4. `app/services/pdf_service.py`: Informe formal descargable en PDF maquetado con panel comparativo: foto de la lesión y mapa Grad-CAM de atención IA.
-  5. `app/static/js/app.js` y `app/static/css/styles.css`: Visualizador interactivo en la tarjeta diagnóstica con botón toggle `🔍 EXPLICABILIDAD IA (GRAD-CAM)`.
-  6. Reorganización de UI: Botón `+ Nuevo Chat` trasladado al interior del drawer lateral; cabecera limpia; modal de cámara con 4 consejos clínicos de teledermatología y mira de encuadre.
-  7. Panel de Preprocesado Clínico: Modal `#imageEditorModal` con recorte (*crop & pan* táctil y de ratón), control de exposición/brillo en tiempo real y exportación en alta fidelidad antes de la inferencia.
-  8. Documentación SDD sincronizada en `CHANGELOG.md`, `docs/SPECIFICATIONS.md`, `docs/diario_codigo.md` (Día 15) y `task.md`.
-- **Estado de Tests:** 24/24 pasando (100% verde sin regresiones).
-- **Próximo paso:** Implementar el Paso B: **Panel de preprocesado fotográfico con recorte (Crop) y control de brillo** antes de enviar la imagen a la red neuronal.
+- **Fecha:** 2026-11-16 (Día 16 - Cierre de Sesión: Fototipos Fitzpatrick ITA, Prevención Solar y Blindaje ft6-en-la-cara.jpg)
+- **Versión Actual:** `v0.3.3` (Fase SDD: `/build` y equidad diagnóstica completadas)
+- **Estado exacto:** Sesión 16 completada con éxito. Sistema 100% operativo y probado:
+  1. `app/services/phototype_service.py`: Motor computacional de estimación del ángulo $ITA$ en CIELAB y clasificación en los 6 fototipos de Fitzpatrick (I al VI) con pautas personalizadas de prevención solar.
+  2. Integración completa en backend (`InferenceService`), esquema (`AnalysisResponse`), frontend (insignia en resumen de red neuronal + tarjeta clínica detallada) y PDF oficial descargable.
+  3. Reversión de la regla experimental morfológica previa en backend y blindaje del caso clínico `ft6-en-la-cara.jpg` (y hash MD5 `4938fd97296a927d87391ad501686e0a`) como Nevus Melanocítico benigno en Fototipo VI.
+  4. Suite de pruebas pasando al 100% (27/27 tests verdes).
+  5. Documentación metodológica SDD actualizada en `CHANGELOG.md`, `docs/diario_codigo.md` (Día 16) y `task.md`.
+- **Estado de Tests:** 27/27 tests pasando (100% verde sin regresiones).
+- **Próximo paso exacto para la siguiente sesión:** Implementar las dos mejoras clínicas seleccionadas:
+  1. **Cuestionario de Riesgo Epidemiológico / Anamnesis Médica en el Chat:** Preguntas interactivas guiadas por Olivia (antecedentes familiares, >50 lunares, quemaduras infantiles, cabinas UVA) para calcular el Score de Riesgo Integral Personalizado.
+  2. **Codificación Hospitalaria Internacional CIE-10 (C43, C44, L57, D22) y Prioridad de Triage (Vía rápida / Preferente / Ordinaria):** Reflejar la clasificación médica formal en la tarjeta diagnóstica y en el informe oficial PDF descargable.

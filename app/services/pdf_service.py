@@ -302,7 +302,44 @@ def generate_clinical_pdf(analysis_data: Dict[str, Any]) -> bytes:
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     story.append(abcde_table)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 12))
+
+    # Bloque de Fototipo Cutaneo y Prevencion Actinica
+    phototype_info = analysis_data.get("phototype")
+    if phototype_info:
+        if hasattr(phototype_info, "model_dump"):
+            phototype_info = phototype_info.model_dump()
+        elif hasattr(phototype_info, "dict"):
+            phototype_info = phototype_info.dict()
+
+        story.append(Paragraph("FOTOTIPO CUTANEO (ESCALA FITZPATRICK) Y PREVENCION ACTINICA", section_header_style))
+        pt_type = phototype_info.get("fitzpatrick_type", "Fototipo III")
+        pt_cat = phototype_info.get("skin_category", "")
+        pt_ita = phototype_info.get("ita_angle", 0.0)
+        pt_burn = phototype_info.get("burn_tendency", "")
+        pt_tan = phototype_info.get("tan_tendency", "")
+        pt_spf = phototype_info.get("recommended_spf", "FPS 30-50")
+        pt_adv = phototype_info.get("sun_protection_advice", "")
+
+        pt_table_data = [
+            [
+                Paragraph(f"<b>Fototipo Estimado:</b> {pt_type} ({pt_cat}) · <b>ITA:</b> {pt_ita}&deg;", body_style),
+                Paragraph(f"<b>Proteccion Minima:</b> {pt_spf}", body_style)
+            ],
+            [
+                Paragraph(f"<b>Reactividad UV:</b> {pt_burn}. {pt_tan}.", body_style),
+                Paragraph(f"<b>Pautas Preventivas:</b> {pt_adv}", body_style)
+            ]
+        ]
+        pt_table = Table(pt_table_data, colWidths=[265, 265])
+        pt_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('PADDING', (0, 0), (-1, -1), 4),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        story.append(pt_table)
+        story.append(Spacer(1, 12))
 
     story.append(Paragraph("RECOMENDACION Y DERIVACION CLINICA", section_header_style))
     rec_text = analysis_data.get("recommendation", "Consulte a su medico especialista.")

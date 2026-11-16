@@ -34,6 +34,34 @@ def test_generate_clinical_pdf() -> None:
     assert pdf_bytes.startswith(b"%PDF-")
 
 
+def test_generate_clinical_pdf_with_phototype() -> None:
+    sample_data = {
+        "filename": "ISIC_0025964.jpg",
+        "primary_label": "enfermo",
+        "severity": "grave",
+        "benign_malignant": "maligno_probable",
+        "risk_score": 0.90,
+        "likely_cause": "Melanoma",
+        "recommendation": "Se recomienda consulta urgente.",
+        "phototype": {
+            "fitzpatrick_type": "Fototipo IV",
+            "fitzpatrick_scale": "IV",
+            "ita_angle": 22.5,
+            "skin_category": "Piel Morena Clara / Mediterránea",
+            "burn_tendency": "Baja",
+            "tan_tendency": "Rápida y uniforme",
+            "clinical_description": "Piel mediterránea.",
+            "sun_protection_advice": "FPS 30-50 diario.",
+            "recommended_spf": "FPS 30 - 50"
+        }
+    }
+    pdf_bytes = generate_clinical_pdf(sample_data)
+    assert pdf_bytes is not None
+    assert len(pdf_bytes) > 1000
+    assert pdf_bytes.startswith(b"%PDF-")
+
+
+
 def test_generate_clinical_pdf_with_image() -> None:
     # 1x1 pixel PNG en base64
     tiny_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
@@ -51,3 +79,31 @@ def test_generate_clinical_pdf_with_image() -> None:
     assert pdf_bytes is not None
     assert len(pdf_bytes) > 1000
     assert pdf_bytes.startswith(b"%PDF-")
+
+
+def test_generate_clinical_pdf_with_phototype() -> None:
+    sample_data = {
+        "filename": "ISIC_0025964.jpg",
+        "primary_label": "enfermo",
+        "severity": "grave",
+        "benign_malignant": "maligno_probable",
+        "risk_score": 0.90,
+        "likely_cause": "Melanoma",
+        "recommendation": "Se recomienda consulta urgente.",
+        "phototype": {
+            "fitzpatrick_type": "Fototipo IV",
+            "fitzpatrick_scale": "IV",
+            "ita_angle": 22.5,
+            "skin_category": "Piel Morena Clara / Mediterránea",
+            "burn_tendency": "Baja",
+            "tan_tendency": "Rápida y uniforme",
+            "clinical_description": "Piel mediterránea.",
+            "sun_protection_advice": "FPS 30-50 diario.",
+            "recommended_spf": "FPS 30 - 50"
+        }
+    }
+    pdf_bytes = generate_clinical_pdf(sample_data)
+    assert pdf_bytes is not None
+    assert len(pdf_bytes) > 1000
+    assert pdf_bytes.startswith(b"%PDF-")
+

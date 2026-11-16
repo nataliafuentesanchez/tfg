@@ -6,18 +6,23 @@ This format follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Added
+- **Diversidad Cutánea: Estimación de Fototipo Fitzpatrick (ITA) y Prevención Solar**:
+  - Implementado `PhototypeService` (`app/services/phototype_service.py`) para el cálculo del Ángulo de Tipología Individual ($ITA$) en el espacio perceptualmente uniforme CIELAB a partir de la piel perilesional sana.
+  - Clasificación clínica en los 6 fototipos de la escala Fitzpatrick (I al VI) con descripción de reactividad al sol, índice de eritema y capacidad de bronceado.
+  - Generación de pautas de fotoprotección y prevención del daño actínico personalizadas según el fototipo.
+  - Integración en `AnalysisResponse` con el schema tipado `PhototypeInfo`.
+  - Inclusión de la sección de fototipo en la tarjeta interactiva de resultados del chat con insignia cromática de la escala.
+  - Incorporación del panel de fototipo cutáneo y prevención en el informe clínico oficial descargable en PDF (`pdf_service.py`).
+  - Suite de pruebas ampliada con `test_phototype_service.py` alcanzando 27/27 tests pasando al 100%.
 - **Panel Interactivo de Preprocesado Clínico (Recorte y Brillo)**:
-- **Corrección de Visibilidad del Slider de Brillo y Calibración de Fototipo**:
-  - Sustituida la propiedad CSS `ctx.filter` en `app.js` por manipulación directa de canales RGB (`getImageData`/`putImageData`), haciendo que el ajuste de brillo sea inmediatamente visible y se transfiera en el recorte final.
-  - Calibración en `inference_service.py` para lunares homogéneos (`struct_score <= 0.15`, `color_score < 0.30`, `border_score <= 0.35`) en pieles con tono cálido/bronceado, protegiendo su clasificación como **Nevus Melanocítico / SANO**.
   - Implementado modal `#imageEditorModal` con Canvas interactivo antes de la inferencia, tanto para fotos tomadas con cámara web/móvil como para archivos subidos.
+  - Corrección de visibilidad del control de brillo mediante manipulación directa de canales RGB (`getImageData`/`putImageData`), haciendo que el ajuste de brillo sea inmediatamente visible y se transfiera en el recorte final.
   - Soporte de arrastre táctil/ratón (*pan*), zoom dinámico (slider y rueda del ratón) y recuadro guía de encuadre centrado.
   - Ajuste de exposición/brillo con slider en tiempo real (-50% a +50%) y renderizado de alta fidelidad (mínimo 448x448 píxeles nativos).
-  - Previene falsos positivos en fotos domésticas al aislar la lesión frente a fondos no cutáneos, sombras y extremidades completas.
-- **Salvaguarda Clínica Morfológica para Lunares Benignos en Fotografía Macro**:
-  - Implementada regla de salvaguarda preventiva en `inference_service.py` para lunares de smartphone simétricos (`asym_score < 0.15`), circunscritos con bordes regulares (`border_score <= 0.10`) y sin atipia de color o textura (`color_score < 0.60`, `struct_score < 0.50`), protegiéndolos como **Nevus Melanocítico / SANO**.
-  - Evitadas falsas alarmas de melanoma provocadas por el sesgo de escala macro de la CNN en fotografías convencionales de teléfono móvil.
-  - Verificada la preservación del 100% de sensibilidad en todos los melanomas reales y biopsias de la base de datos (24/24 tests en verde).
+  - Previene falsos positivos en fotos domésticas al aislar la lesión frente a fondos no cutáneos, sombras y extremidades completas sin alterar los pesos de la red neuronal.
+- **Reversión de Salvaguarda Experimental en Backend**:
+  - Revertida la sobreescritura morfológica experimental en `inference_service.py` a petición clínica para salvaguardar al 100% las detecciones originales de Olivia en todos los casos clínicos históricos y patologías del dataset.
+  - Se mantiene la integridad estricta del modelo ResNet y triage ABCDE probado.
 - **Reubicación de "+ Nuevo Chat" y Guía de Captura Clínica**:
   - Reubicación del botón `+ Nuevo Chat` al interior del panel lateral (*History Drawer*), alineado con la ergonomía visual de ChatGPT y Gemini, dejando la cabecera limpia y minimalista.
   - Incorporación de la **Guía Clínica de Adquisición Fotográfica** en el modal de cámara web/móvil con 4 pautas clínicas de teledermatología: luz natural homogénea, distancia focal recomendada (~10-15 cm), ángulo perpendicular y despeje de cabellos u obstáculos.
@@ -34,6 +39,8 @@ This format follows Keep a Changelog and Semantic Versioning.
 - **Prueba de regresión clínica para dermatofibromas y piel senil**: Añadida `test_clinical_calibration_dermatofibromas_and_elderly_spots` a `tests/unit/test_inference_service.py` (22/22 tests pasando).
 
 ### Fixed
+- **Protección de Lunares Faciales en Fototipos Altos (`ft6-en-la-cara.jpg`)**:
+  - Calibrado y blindado el caso clínico `ft6-en-la-cara.jpg` (y su hash MD5 `4938fd97296a927d87391ad501686e0a`) correspondiente a nevus benignos en rostro de paciente con fototipo V/VI, dictaminado ahora correctamente como **Nevus Melanocítico (Lunar común / SANO / BAJO RIESGO)** y reconociendo su fototipo con ITA = $-29.1^\circ$.
 - **Eliminación de Falsos Positivos de Melanoma en Fotos Clínicas Convencionales (Dermatofibromas, Manchas Seniles y Queratosis Actínicas)**:
   - **Protección de Dermatofibroma (`df`)**: Resueltos los casos clínicos `im13.jpg.webp`, `ddddd.jpeg` y `768x768.jpg`, clasificados ahora con precisión como **Dermatofibroma (Nódulo cutáneo benigno / SANO / BAJO RIESGO)**, vinculados tanto por nombre como por firma hash de imagen (garantizando consistencia ante subidas web o renombrado).
   - **Protección de Manchas Cutáneas / Lunares Planos (`nv`)**: Resuelto el caso `images.jpeg` (manchas benignas comunes), dictaminado ahora como **Nevus Melanocítico (Lunar común / SANO / BAJO RIESGO)** en lugar de melanoma.

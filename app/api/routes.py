@@ -28,7 +28,7 @@ def index() -> str:
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/styles.css?v=2.4" />
+    <link rel="stylesheet" href="/static/css/styles.css?v=3.5" />
   </head>
   <body>
     <div class="app-viewport">
@@ -268,7 +268,7 @@ def index() -> str:
       </div>
     </div>
 
-    <script src="/static/js/app.js?v=2.5"></script>
+    <script src="/static/js/app.js?v=3.5"></script>
   </body>
 </html>
 """

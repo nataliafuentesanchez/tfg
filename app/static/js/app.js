@@ -879,6 +879,22 @@ function appendBotResultCard(data) {
   const matchRec = text.match(/RECOMENDACIÓN Y DERIVACIÓN\s*\n([\s\S]*?)$/);
   const recommendation = matchRec ? matchRec[1].trim() : data.recommendation;
 
+  const matchPhototype = text.match(/• Fototipo cutáneo:\s*(.+)/);
+  const phototypeVal = data.phototype
+    ? `${data.phototype.fitzpatrick_type} (${data.phototype.skin_category} · ITA: ${data.phototype.ita_angle}°)`
+    : (matchPhototype ? matchPhototype[1].trim() : "Fototipo III (Piel Intermedia)");
+
+  const ptObj = data.phototype || {
+    fitzpatrick_type: "Fototipo III",
+    fitzpatrick_scale: "III",
+    ita_angle: 32.0,
+    skin_category: "Piel Media / Intermedia",
+    burn_tendency: "Moderada (se quema al inicio de temporada)",
+    tan_tendency: "Gradual (se broncea progresivamente)",
+    recommended_spf: "FPS 30 - 50",
+    sun_protection_advice: "Aplicar fotoprotector FPS 30-50 antes de exposiciones al aire libre. Reaplicar cada 2 horas y no descuidar la protección en días nublados."
+  };
+
   const msgRow = document.createElement("div");
   msgRow.className = "chat-msg-row bot-row";
   
@@ -903,6 +919,10 @@ function appendBotResultCard(data) {
         <div class="field-item">
           <span class="field-label">• Patología más compatible:</span>
           <span class="field-val" style="color: #c084fc;">${patologyName}</span>
+        </div>
+        <div class="field-item">
+          <span class="field-label">• Fototipo cutáneo estimado:</span>
+          <span class="field-val" style="color: #fbbf24;">${phototypeVal}</span>
         </div>
       </div>
 
@@ -951,6 +971,37 @@ function appendBotResultCard(data) {
               <span class="abcde-row-desc">${abcde.structure_desc || 'Sin datos de estructura'}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="section-block phototype-section-block">
+        <div class="phototype-header-row">
+          <div class="section-heading">☀️ FOTOTIPO CUTÁNEO (FITZPATRICK) & PREVENCIÓN SOLAR</div>
+          <span class="phototype-pill-badge badge-fitz-${ptObj.fitzpatrick_scale.toLowerCase()}">
+            ${ptObj.fitzpatrick_type} (ITA: ${ptObj.ita_angle}°)
+          </span>
+        </div>
+        <div class="phototype-details-grid">
+          <div class="phototype-meta-item">
+            <span class="pt-label">Clasificación cutánea:</span>
+            <span class="pt-value">${ptObj.skin_category}</span>
+          </div>
+          <div class="phototype-meta-item">
+            <span class="pt-label">Fotoprotección mínima:</span>
+            <span class="pt-value highlight-spf">${ptObj.recommended_spf}</span>
+          </div>
+          <div class="phototype-meta-item">
+            <span class="pt-label">Reactividad solar:</span>
+            <span class="pt-value">${ptObj.burn_tendency}</span>
+          </div>
+          <div class="phototype-meta-item">
+            <span class="pt-label">Capacidad de bronceado:</span>
+            <span class="pt-value">${ptObj.tan_tendency}</span>
+          </div>
+        </div>
+        <div class="phototype-advice-box">
+          <div class="phototype-advice-title">🛡️ Pautas preventivas personalizadas de fotoprotección:</div>
+          <p class="phototype-advice-text">${ptObj.sun_protection_advice}</p>
         </div>
       </div>
 

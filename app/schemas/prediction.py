@@ -9,6 +9,18 @@ from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 
+class PhototypeInfo(BaseModel):
+    fitzpatrick_type: str = Field(..., description="Denominación en escala Fitzpatrick (e.g. 'Fototipo IV')")
+    fitzpatrick_scale: str = Field(..., description="Número romano o identificador (e.g. 'IV')")
+    ita_angle: float = Field(..., description="Ángulo de Tipología Individual en grados")
+    skin_category: str = Field(..., description="Categoría descriptiva de la piel (e.g. 'Piel Morena Clara / Mediterránea')")
+    burn_tendency: str = Field(..., description="Facilidad de quemadura solar (e.g. 'Baja / Ocasional')")
+    tan_tendency: str = Field(..., description="Capacidad de bronceado (e.g. 'Rápido y progresivo')")
+    clinical_description: str = Field(..., description="Descripción clínica de reactividad actínica")
+    sun_protection_advice: str = Field(..., description="Recomendaciones personalizadas de fotoprotección")
+    recommended_spf: str = Field(..., description="Factor de Protección Solar sugerido (e.g. 'FPS 30 - 50')")
+
+
 class AnalysisResponse(BaseModel):
     filename: str = Field(..., description="Nombre del archivo procesado")
     primary_label: str = Field(..., description="sano o enfermo")
@@ -31,4 +43,8 @@ class AnalysisResponse(BaseModel):
     gradcam_image_base64: Optional[str] = Field(
         default=None,
         description="Mapa de atencion visual e interpretabilidad Grad-CAM codificado en Base64"
+    )
+    phototype: Optional[PhototypeInfo] = Field(
+        default=None,
+        description="Estimación del fototipo cutáneo Fitzpatrick (ITA) y recomendaciones de prevención solar"
     )
