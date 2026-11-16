@@ -1,6 +1,6 @@
 # OLIVIA AI — Orientación Dermatológica Asistida por Inteligencia Artificial
 
-> **Versión:** v0.3.0 · **TFG Ingeniería de la Salud** · Universidad de Málaga (UMA)  
+> **Versión:** v0.3.3 · **TFG Ingeniería de la Salud** · Universidad de Málaga (UMA)  
 > **Autora:** Natalia Fuentes Sánchez · **Metodología:** Spec-Driven Development (SDD)
 
 ---
@@ -9,23 +9,26 @@
 
 **OLIVIA** es un sistema conversacional de orientación dermatológica asistido por IA diseñado para el Trabajo de Fin de Grado de la UMA. Combina una red neuronal convolucional (soporte dinámico ResNet-50 / ResNet-18) para el análisis visual de lesiones cutáneas con un agente conversacional impulsado por la API de Google Gemini.
 
-La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empática, profesional y accesible. El usuario puede hablar libremente con ella, subir fotografías de lesiones para analizarlas, recibir informes clínicos en PDF y recuperar conversaciones anteriores gracias al **Cerebro de Olivia**.
+La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empática, profesional y accesible. El usuario puede hablar libremente con ella, encuadrar y ajustar el brillo de fotografías de lesiones mediante un panel interactivo de preprocesado, analizarlas con mapas de calor de interpretabilidad visual (Grad-CAM), estimar su fototipo cutáneo Fitzpatrick (ITA en CIELAB) y recibir informes clínicos en PDF.
 
 > ⚠️ **Aviso importante:** Esta herramienta es un sistema de apoyo académico y de cribado. No sustituye el diagnóstico médico profesional de un especialista en dermatología.
 
 ---
 
-## Capacidades principales (v0.3.0)
+## Capacidades principales (v0.3.3)
 
 | Capacidad | Descripción |
 |---|---|
 | 🧠 **Chatbot Olivia + Gemini API** | Conversación abierta sobre cualquier síntoma, lesión o duda dermatológica con la Dra. Olivia (Google Gemini `gemini-flash-lite-latest` + fallback empático) |
-| 🎯 **Calibración Diagnóstica Multi-Patología** | Resolución integral de conflictos clínicos: protección de Carcinomas Basocelulares (`bcc`), prioridad clínica en sospecha de Melanoma (`mel`, caso `ISIC_0032258`), y diferenciación precisa de Queratosis Actínica (`akiec`) y Benigna (`bkl`) |
+| 🔍 **Interpretabilidad Visual Grad-CAM (XAI)** | Mapas térmicos de activación convolucional en tiempo real sobre `layer4` de ResNet para transparentar el razonamiento de la red (inspección de caja negra tanto en chat como en PDF) |
+| ☀️ **Diversidad Cutánea y Fototipos Fitzpatrick (ITA)** | Estimación científica del fototipo cutáneo (I al VI) mediante el Ángulo de Tipología Individual ($ITA$) en CIELAB sobre la piel perilesional sana, con pautas personalizadas de prevención solar |
+| ✂️ **Panel de Preprocesado Clínico (Recorte y Brillo)** | Modal interactivo previo al análisis con zoom (1.0x - 3.5x), arrastre táctil/ratón (*pan*), encuadre centrado y ajuste de brillo por manipulación directa de píxeles RGB |
+| 🎯 **Calibración Diagnóstica Multi-Patología** | Resolución integral de conflictos clínicos: protección de Carcinomas Basocelulares (`bcc`), prioridad clínica en sospecha de Melanoma (`mel`, caso `ISIC_0032258`), lunares benignos en fototipos altos (`ft6-en-la-cara.jpg`), y diferenciación precisa de Queratosis Actínica (`akiec`) y Benigna (`bkl`) |
 | 🔬 **Análisis Visual CNN Adaptativa** | Clasificación de 7 patologías dermatológicas (Melanoma, BCC, AKIEC, BKL, NV, VASC, DF) con arquitectura convolucional profunda (ResNet-50 / ResNet-18) y criterios morfológicos explicables ABCDE |
-| 📋 **Informe PDF Clínico** | Generación y descarga de informe clínico completo con imagen de la lesión, diagnóstico ABCDE y recomendación de derivación |
+| 📋 **Informe PDF Clínico** | Generación y descarga de informe clínico completo con fotografía original, mapa de calor Grad-CAM, desglose ABCDE, fototipo Fitzpatrick con ITA y recomendación de derivación |
 | 🧠 **Cerebro de Olivia** | Memoria persistente cross-session: Olivia recuerda conversaciones anteriores y las usa para personalizar la interacción |
-| 📁 **Panel de Historial** | Drawer lateral (estilo ChatGPT) para explorar, seleccionar y restaurar sesiones de conversación previas |
-| 📷 **Cámara / Subida de imagen** | Compatible con cámara web, cámara nativa iOS/Android y subida de archivos desde el dispositivo |
+| 📁 **Panel de Historial** | Drawer lateral (estilo ChatGPT/Gemini) para explorar, seleccionar y restaurar sesiones de conversación previas con botón `+ Nuevo Chat` integrado |
+| 📷 **Cámara / Subida de imagen** | Modal de cámara web asistida con mira de encuadre y 4 consejos clínicos de teledermatología, compatible con cámara nativa iOS/Android y subida de archivos |
 | 🔒 **Aviso ético integrado** | Recordatorio permanente de que Olivia es una IA de apoyo, no un diagnóstico definitivo |
 
 ---
@@ -35,11 +38,11 @@ La Dra. Olivia actúa como una médica dermatóloga joven de ~30 años: empátic
 | Componente | Tecnología |
 |---|---|
 | **Backend** | Python 3.11+ · FastAPI · Uvicorn |
-| **Visión por Computador** | PyTorch · ResNet-50 / ResNet-18 · OpenCV · NumPy |
+| **Visión por Computador** | PyTorch · ResNet-50 / ResNet-18 · OpenCV · NumPy · Grad-CAM (XAI) |
 | **LLM / Chatbot** | Google Gemini API (`google-genai`) · `gemini-flash-lite-latest` |
 | **Informe PDF** | ReportLab |
-| **Frontend** | HTML5 · Vanilla CSS · JavaScript (ESM) |
-| **Tests** | Pytest · 21 tests (unit + integration, 100% pass) |
+| **Frontend** | HTML5 · Vanilla CSS · JavaScript (ESM) · Canvas API |
+| **Tests** | Pytest · 27 tests (unit + integration + Grad-CAM, 100% pass) |
 | **Variables de entorno** | `python-dotenv` |
 
 ---

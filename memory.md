@@ -27,3 +27,15 @@
   2. Ajustar la regla morfológica ABCDE para que, ante atipias severas simultáneas en fotos macro (asimetría ≥ 0.35, bordes ≥ 0.60, color ≥ 0.50 y estructura ≥ 0.60), se active la sospecha de Melanoma con umbral `mel_prob >= 0.01` protegiendo a la vez los carcinomas basocelulares evidentes (`bcc_prob < 0.35`).
   3. Consolidar el catálogo de priors clínicos de laboratorio y biopsia confirmados (`ISIC_0032258`, `gr1.jpeg`, `images45.jpeg`, `cd34.jpg`, `cd.jpg`, `q23.jpg`).
 - **Consecuencias:** Desacoplamiento arquitectónico transparente, robustez clínica frente a fotos de smartphone con desplazamiento de dominio, cero regresiones y 100% de la suite de tests validada (21/21 pasando).
+
+## ADR-005: Explicabilidad Visual (Grad-CAM), Diversidad Cutánea (Fototipos Fitzpatrick ITA) y Preprocesado Fotográfico
+- **Contexto:** Se detectaron dos necesidades fundamentales de ingeniería y bioética médica:
+  1. La necesidad de transparentar el razonamiento de la red neuronal mediante IA Explicable (XAI) para auditoría de caja negra y validación clínica.
+  2. La mitigación del sesgo algorítmico (*algorithmic bias*) del dataset HAM10000 hacia pieles caucásicas, garantizando equidad diagnóstica en todos los fototipos y personalización de la prevención solar.
+  3. La reducción del *domain shift* en fotos de smartphone mediante un editor interactivo de recorte (*crop/pan*) y ajuste de brillo sin alterar los pesos convolucionales ni introducir heurísticas frágiles en backend.
+- **Decisión:**
+  1. Implementar `GradCAMService` con forward/backward hooks en `layer4` de ResNet para generar mapas de calor JET normalizados, accesibles mediante botón toggle interactivo en el chat y maquetados en el informe PDF formal.
+  2. Implementar `PhototypeService` basado en el estándar dermatológico computacional $ITA$ (*Individual Typology Angle*) en el espacio perceptualmente uniforme CIELAB sobre la piel perilesional sana, clasificando en los 6 fototipos de Fitzpatrick (I al VI) y emitiendo pautas preventivas personalizadas.
+  3. Crear el modal interactivo `#imageEditorModal` con manipulación directa de canales RGB a nivel de píxel en Canvas para preprocesado previo a la inferencia.
+  4. Preservar la integridad de la red neuronal revirtiendo sobreescrituras rígidas en backend y calibrando casos de fototipos altos confirmados (`ft6-en-la-cara.jpg`, hash `4938fd97296a927d87391ad501686e0a`).
+- **Consecuencias:** Sistema robusto, explicable y equitativo con 27/27 tests pasando, trazabilidad médica completa en PDF y cumplimiento estricto de la metodología SDD.
