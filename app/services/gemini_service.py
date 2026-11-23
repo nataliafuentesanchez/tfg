@@ -72,8 +72,8 @@ def generate_olivia_response(
         "hola!", "hola, olivia", "hola buenas", "hola, buenas", "hola!"
     } or (len(msg_clean) <= 12 and any(w in msg_clean for w in ["hola", "buenas", "saludos", "hey"]))
 
-    # ⚡ VÍA RÁPIDA DE ULTRA-ALTA VELOCIDAD PARA SALUDOS SIMPLES
-    if is_greeting and not analysis_context:
+    # ⚡ VÍA RÁPIDA DE ULTRA-ALTA VELOCIDAD PARA SALUDOS SIMPLES (solo si no hay historial ni contexto previo)
+    if is_greeting and not analysis_context and not brain_memory:
         reply = (
             "¡Hola! 👋 Soy la **Dra. Olivia**, tu médica asistencial de orientación dermatológica. ¡Encantada de saludarte! 😊\n\n"
             "Estoy aquí para ayudarte con cualquier duda sobre tu piel, síntomas, prevención o para analizar las fotografías de lunares y manchas que subas.\n\n"

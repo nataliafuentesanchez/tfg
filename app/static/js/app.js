@@ -15,6 +15,8 @@ const backToLandingBtn = document.getElementById("backToLandingBtn");
 const fileInputHidden = document.getElementById("fileInputHidden");
 const uploadActionBtn = document.getElementById("uploadActionBtn");
 const cameraActionBtn = document.getElementById("cameraActionBtn");
+const attachPlusBtn = document.getElementById("attachPlusBtn");
+const attachPopoverMenu = document.getElementById("attachPopoverMenu");
 const chatMessagesArea = document.getElementById("chatMessagesArea");
 const dynamicChatEntries = document.getElementById("dynamicChatEntries");
 const typingLoader = document.getElementById("typingLoader");
@@ -63,6 +65,7 @@ const closeDrawerBackdrop = document.getElementById("closeDrawerBackdrop");
 const drawerNewChatBtn = document.getElementById("drawerNewChatBtn");
 const drawerHomeBtn = document.getElementById("drawerHomeBtn");
 const drawerHistoryList = document.getElementById("drawerHistoryList");
+const clearAllDrawerBtn = document.getElementById("clearAllDrawerBtn");
 
 let streamWebcam = null;
 let lastAnalysisResult = null;
@@ -70,14 +73,54 @@ let chatHistory = [];
 let currentSessionId = "session_" + Date.now();
 
 // ==========================================
-// GESTIÓN DE ALMACENAMIENTO DE CHATS (CEREBRO)
+// GESTIÓN DE ALMACENAMIENTO DE CHATS (CEREBRO RESILIENTE)
 // ==========================================
+function cleanHtmlForStorage(html) {
+  if (!html) return "";
+  // Si contiene imágenes en Base64 pesadas, las aligeramos para evitar agotar la cuota de 5MB de localStorage
+  if (html.length > 50000) {
+    return html.replace(/src="data:image\/[^;]+;base64,[^"]+"/g, 'src="" data-stored-photo="true"');
+  }
+  return html;
+}
+
+function safeSaveSessions(savedSessions) {
+  try {
+    localStorage.setItem("olivia_saved_sessions", JSON.stringify(savedSessions.slice(0, 25)));
+  } catch (err) {
+    console.warn("Cuota de localStorage al límite. Aplicando podado inteligente de sesiones anteriores...", err);
+    // Estrategia de recuperación ante cuota:
+    // 1. Conservar chatHistory y resumen, eliminando entriesHtml pesado de las sesiones anteriores
+    const optimized = savedSessions.map((s, idx) => {
+      if (idx > 0) {
+        return { ...s, entriesHtml: "" };
+      }
+      return s;
+    });
+    try {
+      localStorage.setItem("olivia_saved_sessions", JSON.stringify(optimized.slice(0, 15)));
+    } catch (e2) {
+      // 2. Si aún persiste, conservar las 6 sesiones más recientes
+      try {
+        localStorage.setItem("olivia_saved_sessions", JSON.stringify(optimized.slice(0, 6)));
+      } catch (e3) {
+        localStorage.setItem("olivia_saved_sessions", JSON.stringify(optimized.slice(0, 3)));
+      }
+    }
+  }
+}
+
 function saveCurrentSessionToBrain() {
+  // Evitar guardar sesiones completamente vacías para no saturar el historial
+  if ((!chatHistory || chatHistory.length === 0) && !lastAnalysisResult) {
+    return;
+  }
+
   try {
     const savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
     const existingIdx = savedSessions.findIndex(s => s.id === currentSessionId);
     
-    // Titulo descriptivo basado en el diagnostico o primer mensaje del usuario
+    // Título descriptivo basado en el diagnóstico o primer mensaje del usuario
     let sessionTitle = "Consulta dermatológica";
     if (lastAnalysisResult && lastAnalysisResult.likely_cause) {
       sessionTitle = "Análisis: " + lastAnalysisResult.likely_cause;
@@ -105,9 +148,17 @@ function saveCurrentSessionToBrain() {
       title: sessionTitle,
       dateStr: new Date().toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
       chatHistory: chatHistory,
-      lastAnalysisResult: lastAnalysisResult,
+      lastAnalysisResult: lastAnalysisResult ? {
+        likely_cause: lastAnalysisResult.likely_cause,
+        primary_label: lastAnalysisResult.primary_label,
+        risk_score: lastAnalysisResult.risk_score,
+        severity: lastAnalysisResult.severity,
+        benign_malignant: lastAnalysisResult.benign_malignant,
+        abcde_analysis: lastAnalysisResult.abcde_analysis,
+        recommendation: lastAnalysisResult.recommendation
+      } : null,
       summary: sessionSummary,
-      entriesHtml: dynamicChatEntries ? dynamicChatEntries.innerHTML : ""
+      entriesHtml: cleanHtmlForStorage(dynamicChatEntries ? dynamicChatEntries.innerHTML : "")
     };
 
     if (existingIdx >= 0) {
@@ -116,7 +167,7 @@ function saveCurrentSessionToBrain() {
       savedSessions.unshift(sessionData);
     }
 
-    localStorage.setItem("olivia_saved_sessions", JSON.stringify(savedSessions.slice(0, 20)));
+    safeSaveSessions(savedSessions);
   } catch (err) {
     console.warn("No se pudo guardar la sesión en Cerebro de Olivia:", err);
   }
@@ -129,8 +180,8 @@ function saveCurrentSessionToBrain() {
 function buildBrainMemorySummary() {
   try {
     const savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
-    // Excluir la sesión actual y tomar las 4 más recientes
-    const pastSessions = savedSessions.filter(s => s.id !== currentSessionId).slice(0, 4);
+    // Excluir la sesión actual y tomar las 5 más recientes
+    const pastSessions = savedSessions.filter(s => s.id !== currentSessionId).slice(0, 5);
     if (pastSessions.length === 0) return null;
 
     const lines = pastSessions.map((s, i) =>
@@ -139,6 +190,22 @@ function buildBrainMemorySummary() {
     return lines.join("\n");
   } catch {
     return null;
+  }
+}
+
+function deleteSessionFromBrain(sessionId) {
+  try {
+    let savedSessions = JSON.parse(localStorage.getItem("olivia_saved_sessions") || "[]");
+    savedSessions = savedSessions.filter(s => s.id !== sessionId);
+    safeSaveSessions(savedSessions);
+    
+    // Si la sesión eliminada era la que estaba en pantalla, reiniciar a nuevo chat
+    if (currentSessionId === sessionId) {
+      resetChatSession();
+    }
+    loadBrainHistoryList();
+  } catch (err) {
+    console.warn("Error al eliminar la sesión:", err);
   }
 }
 
@@ -159,13 +226,33 @@ function loadBrainHistoryList() {
       const card = document.createElement("div");
       card.className = "drawer-session-card" + (isActive ? " active-session" : "");
       card.innerHTML = `
-        <div class="session-card-header">
-          <span class="session-card-title">${session.title}</span>
-          <span class="session-card-date">${session.dateStr}</span>
+        <div class="session-card-info">
+          <div class="session-card-header">
+            <span class="session-card-title">${session.title}</span>
+            <span class="session-card-date">${session.dateStr}</span>
+          </div>
+          <div class="session-card-preview">${session.chatHistory ? session.chatHistory.length : 0} mensajes · ${isActive ? '<strong style="color:#818cf8">Sesión actual</strong>' : 'Pulsa para restaurar'}</div>
         </div>
-        <div class="session-card-preview">${session.chatHistory ? session.chatHistory.length : 0} mensajes · ${isActive ? '<strong style="color:#818cf8">Sesión actual</strong>' : 'Pulsa para restaurar'}</div>
+        <button class="delete-session-btn" title="Eliminar este chat" type="button" aria-label="Eliminar conversación">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
       `;
+      
+      // Restaurar al hacer clic en la tarjeta
       card.addEventListener("click", () => restoreSessionFromBrain(session.id));
+
+      // Botón de papelera para borrar este chat individual
+      const delBtn = card.querySelector(".delete-session-btn");
+      if (delBtn) {
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteSessionFromBrain(session.id);
+        });
+      }
+
       drawerHistoryList.appendChild(card);
     });
   } catch (err) {
@@ -184,13 +271,37 @@ function restoreSessionFromBrain(sessionId) {
     chatHistory = session.chatHistory || [];
     
     if (dynamicChatEntries) {
-      dynamicChatEntries.innerHTML = session.entriesHtml || "";
+      if (session.entriesHtml && session.entriesHtml.trim() !== "") {
+        dynamicChatEntries.innerHTML = session.entriesHtml;
+      } else if (session.chatHistory && session.chatHistory.length > 0) {
+        // Reconstrucción desde el historial de mensajes
+        dynamicChatEntries.innerHTML = "";
+        session.chatHistory.forEach(msg => {
+          const row = document.createElement("div");
+          row.className = "chat-msg-row " + (msg.sender === "user" ? "user-row" : "bot-row");
+          if (msg.sender === "user") {
+            row.innerHTML = `<div class="msg-bubble user-bubble"><p>${msg.text}</p></div>`;
+          } else {
+            row.innerHTML = `
+              <div class="msg-avatar"><div class="mini-celestial-orb"></div></div>
+              <div class="msg-bubble bot-bubble">${parseSimpleMarkdown(msg.text)}</div>
+            `;
+          }
+          dynamicChatEntries.appendChild(row);
+        });
+        if (lastAnalysisResult) {
+          appendBotResultCard(lastAnalysisResult);
+        }
+      }
     }
     
     closeDrawer();
     goToChat();
     scrollToBottom();
   } catch (err) {
+    alert("No se pudo restaurar la sesión seleccionada.");
+  }
+}
     alert("No se pudo restaurar la sesión seleccionada.");
   }
 }
@@ -244,6 +355,16 @@ if (drawerHomeBtn) {
   });
 }
 
+if (clearAllDrawerBtn) {
+  clearAllDrawerBtn.addEventListener("click", () => {
+    if (confirm("¿Estás segura de que deseas vaciar todas las conversaciones guardadas del historial?")) {
+      localStorage.removeItem("olivia_saved_sessions");
+      resetChatSession();
+      loadBrainHistoryList();
+    }
+  });
+}
+
 // ==========================================
 // CONTROL DE NAVEGACIÓN (PASO 1 <-> PASO 2)
 // ==========================================
@@ -265,6 +386,14 @@ if (sphereTrigger) sphereTrigger.addEventListener("click", goToChat);
 if (startConversationBtn) startConversationBtn.addEventListener("click", goToChat);
 if (backToLandingBtn) backToLandingBtn.addEventListener("click", goToLanding);
 
+// Función para ocultar la tarjeta de bienvenida al iniciar la interacción
+function hideWelcomeCardIfPresent() {
+  const welcomeRow = document.querySelector(".welcome-card-row");
+  if (welcomeRow) {
+    welcomeRow.remove();
+  }
+}
+
 // ==========================================
 // FUNCIÓN PARA CREAR / REINICIAR NUEVO CHAT
 // ==========================================
@@ -275,20 +404,63 @@ function resetChatSession() {
   chatHistory = [];
   
   const msgRow = document.createElement("div");
-  msgRow.className = "chat-msg-row bot-row";
+  msgRow.className = "chat-msg-row bot-row welcome-card-row";
   msgRow.innerHTML = `
-    <div class="msg-avatar"><div class="mini-orb"></div></div>
-    <div class="msg-bubble welcome-bubble">
-      <p>✨ <strong>¡Nuevo chat iniciado!</strong> Soy la <strong>Dra. Olivia</strong>, tu médica asistencial de orientación dermatológica.</p>
-      <p style="margin-top: 6px;">Puedes preguntarme cualquier duda sobre tu piel, síntomas o subir una fotografía para analizarla:</p>
-      <ul class="guide-options-list" style="margin-top: 6px;">
-        <li>• Escribe tus preguntas o dudas médicas directamente abajo.</li>
-        <li>• Pulsa <strong>📷 Cámara</strong> para tomar una foto en directo.</li>
-        <li>• Pulsa <strong>📁 Subir</strong> para seleccionar una imagen de tu dispositivo.</li>
-      </ul>
+    <div class="welcome-glass-card">
+      <!-- Marca de agua médica sutil -->
+      <div class="card-cross-watermark" aria-hidden="true">
+        <svg width="86" height="86" viewBox="0 0 64 64" fill="none">
+          <path d="M26 12H38V26H52V38H38V52H26V38H12V26H26V12Z" stroke="rgba(139, 92, 246, 0.2)" stroke-width="2.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- Cabecera de la tarjeta con badge tecnológico y texto -->
+      <div class="welcome-card-header">
+        <div class="welcome-tech-badge" aria-hidden="true">
+          <div class="badge-ring-orbit"></div>
+          <svg class="badge-camera-svg" viewBox="0 0 64 64" fill="none">
+            <path d="M16 26V18C16 16.8954 16.8954 16 18 16H26" stroke="#c084fc" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M48 26V18C48 16.8954 47.1046 16 46 16H38" stroke="#c084fc" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M16 38V46C16 47.1046 16.8954 48 18 48H26" stroke="#c084fc" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M48 38V46C48 47.1046 47.1046 48 46 48H38" stroke="#c084fc" stroke-width="2.4" stroke-linecap="round"/>
+            <circle cx="32" cy="32" r="5" fill="#c084fc" />
+          </svg>
+        </div>
+
+        <div class="welcome-header-text">
+          <h2 class="welcome-card-title"><span class="purple-sparkle">✦</span> ¡Nuevo chat iniciado!</h2>
+          <p class="welcome-card-desc">Soy la <strong class="dr-olivia-highlight">Dra. Olivia</strong>, tu médica asistencial de orientación dermatológica.</p>
+          <p class="welcome-card-subdesc">Puedes preguntarme cualquier duda sobre tu piel, síntomas o subir una fotografía para analizarla:</p>
+        </div>
+      </div>
+
+      <!-- Tres opciones guía informativas (no interactivas) -->
+      <div class="welcome-guide-options">
+        <div class="guide-action-pill" id="guideOptionText">
+          <div class="pill-icon-circle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          </div>
+          <span class="guide-text">Escribe tus preguntas o dudas médicas directamente abajo.</span>
+        </div>
+
+        <div class="guide-action-pill" id="guideOptionCamera">
+          <div class="pill-icon-circle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          </div>
+          <span class="guide-text">Pulsa el botón <strong class="badge-highlight-camera">+</strong> y elige <strong>Cámara</strong> para tomar una foto en directo.</span>
+        </div>
+
+        <div class="guide-action-pill" id="guideOptionUpload">
+          <div class="pill-icon-circle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          </div>
+          <span class="guide-text">Pulsa el botón <strong class="badge-highlight-upload">+</strong> y elige <strong>Subir</strong> para seleccionar una imagen de tu dispositivo.</span>
+        </div>
+      </div>
     </div>
   `;
   dynamicChatEntries.appendChild(msgRow);
+
   scrollToBottom();
   saveCurrentSessionToBrain();
 }
@@ -332,6 +504,9 @@ function parseSimpleMarkdown(text) {
 // ==========================================
 async function handleUserTextMessage(text) {
   if (!text) return;
+  
+  // Ocultar la tarjeta de bienvenida al enviar el primer mensaje
+  hideWelcomeCardIfPresent();
   
   const userRow = document.createElement("div");
   userRow.className = "chat-msg-row user-row";
@@ -466,10 +641,42 @@ if (chatForm) {
 }
 
 // ==========================================
-// MANEJO DE ENTRADA: ARCHIVO O CÁMARA
+// MANEJO DE ENTRADA: BOTÓN '+' Y POPOVER DE ACCIONES
 // ==========================================
+function toggleAttachPopover(show) {
+  if (!attachPopoverMenu) return;
+  const isCurrentlyOpen = attachPopoverMenu.style.display !== "none";
+  const shouldOpen = show !== undefined ? show : !isCurrentlyOpen;
+  attachPopoverMenu.style.display = shouldOpen ? "flex" : "none";
+  if (attachPlusBtn) {
+    if (shouldOpen) {
+      attachPlusBtn.classList.add("active");
+    } else {
+      attachPlusBtn.classList.remove("active");
+    }
+  }
+}
+
+if (attachPlusBtn) {
+  attachPlusBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleAttachPopover();
+  });
+}
+
+// Cerrar el popover al hacer clic fuera
+document.addEventListener("click", (e) => {
+  if (attachPopoverMenu && attachPopoverMenu.style.display !== "none") {
+    if (!attachPopoverMenu.contains(e.target) && !attachPlusBtn.contains(e.target)) {
+      toggleAttachPopover(false);
+    }
+  }
+});
+
 if (uploadActionBtn) {
-  uploadActionBtn.addEventListener("click", () => {
+  uploadActionBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleAttachPopover(false);
     fileInputHidden.click();
   });
 }
@@ -483,7 +690,9 @@ if (fileInputHidden) {
 }
 
 if (cameraActionBtn) {
-  cameraActionBtn.addEventListener("click", async () => {
+  cameraActionBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    toggleAttachPopover(false);
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       fileInputHidden.click();
       return;
@@ -744,6 +953,9 @@ function scrollToBottom() {
 }
 
 function appendUserImageMessage(imageSrc, fileName) {
+  // Ocultar la tarjeta de bienvenida al enviar la primera foto
+  hideWelcomeCardIfPresent();
+
   const msgRow = document.createElement("div");
   msgRow.className = "chat-msg-row user-row";
   msgRow.innerHTML = `

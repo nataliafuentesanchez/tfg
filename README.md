@@ -127,7 +127,7 @@ stop.cmd
 PYTHONPATH=. venv/bin/pytest -v
 ```
 
-**Estado actual:** `19/19 tests pasando ✅`
+**Estado actual:** `27/27 tests pasando ✅`
 
 ```
 tests/integration/test_chat_endpoint.py    ✅✅
@@ -136,6 +136,8 @@ tests/unit/test_dataset_service.py         ✅✅✅
 tests/unit/test_gemini_service.py          ✅✅✅
 tests/unit/test_inference_service.py       ✅✅✅✅✅✅✅✅
 tests/unit/test_pdf_service.py             ✅✅
+tests/unit/test_phototype_service.py       ✅✅✅✅✅
+tests/test_gradcam.py                      ✅✅
 ```
 
 ---

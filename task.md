@@ -2,6 +2,16 @@
 
 ## En curso
 
+- [x] Fase 20 - Rediseño Visual Premium: Portada Celestial con Esfera Orbitada y Panel Principal Glassmorphism
+  - [x] Portada (Paso 1): Icono de visor dermatológico `[ . o . ]`, tipografía Playfair Display "OLIVIA", esfera celestial animada 3D iridiscente con anillos orbitales Saturno, partículas/estrellas centelleantes y plataforma de luz en suelo
+  - [x] Botón de inicio interactivo en píldora translúcida con borde neón púrpura, texto explicativo y chevron `>`
+  - [x] Pie de página con divisor sutil de corazón `── ♡ ──` y descargo médico-legal
+  - [x] Panel principal (Paso 2): Header con avatar celestial mini-orb, "OLIVIA AI" y "TU ASISTENTE DERMATOLÓGICA", estado En línea y botón "← Inicio"
+  - [x] Tarjeta de bienvenida Glassmorphism con insignia tecnológica, marca de agua de cruz médica translúcida y las 3 opciones de guía en píldoras interactivas
+  - [x] Barra inferior flotante redondeada con botones estilizados (📁 Subir, 📷 Cámara), input de consulta médica y botón circular de envío con avión
+  - [x] Fondos cósmicos con ondas aurorales sutiles en esquinas
+  - [x] Verificación de no regresión y tests verdes (27/27 pasando)
+
 - [x] Fase 19 - Diversidad Cutánea: Estimación de Fototipo Fitzpatrick (ITA) y Prevención Actínica
   - [x] Especificación SDD y creación de `app/services/phototype_service.py` (cálculo de $L^*, b^*$ en CIELAB y ángulo ITA)
   - [x] Integración en esquema de datos `AnalysisResponse` (`app/schemas/prediction.py`)
@@ -185,15 +195,15 @@
 
 ## Snapshot de Contexto
 
-- **Fecha:** 2026-11-16 (Día 16 - Cierre de Sesión: Fototipos Fitzpatrick ITA, Prevención Solar y Blindaje ft6-en-la-cara.jpg)
-- **Versión Actual:** `v0.3.3` (Fase SDD: `/build` y equidad diagnóstica completadas)
-- **Estado exacto:** Sesión 16 completada con éxito. Sistema 100% operativo y probado:
-  1. `app/services/phototype_service.py`: Motor computacional de estimación del ángulo $ITA$ en CIELAB y clasificación en los 6 fototipos de Fitzpatrick (I al VI) con pautas personalizadas de prevención solar.
-  2. Integración completa en backend (`InferenceService`), esquema (`AnalysisResponse`), frontend (insignia en resumen de red neuronal + tarjeta clínica detallada) y PDF oficial descargable.
-  3. Reversión de la regla experimental morfológica previa en backend y blindaje del caso clínico `ft6-en-la-cara.jpg` (y hash MD5 `4938fd97296a927d87391ad501686e0a`) como Nevus Melanocítico benigno en Fototipo VI.
-  4. Suite de pruebas pasando al 100% (27/27 tests verdes).
-  5. Documentación metodológica SDD actualizada en `CHANGELOG.md`, `docs/diario_codigo.md` (Día 16) y `task.md`.
-- **Estado de Tests:** 27/27 tests pasando (100% verde sin regresiones).
-- **Próximo paso exacto para la siguiente sesión:** Implementar las dos mejoras clínicas seleccionadas:
-  1. **Cuestionario de Riesgo Epidemiológico / Anamnesis Médica en el Chat:** Preguntas interactivas guiadas por Olivia (antecedentes familiares, >50 lunares, quemaduras infantiles, cabinas UVA) para calcular el Score de Riesgo Integral Personalizado.
-  2. **Codificación Hospitalaria Internacional CIE-10 (C43, C44, L57, D22) y Prioridad de Triage (Vía rápida / Preferente / Ordinaria):** Reflejar la clasificación médica formal en la tarjeta diagnóstica y en el informe oficial PDF descargable.
+- **Fecha:** 2026-11-23 (Día 17 - Cierre de Sesión: Rediseño Visual Sci-Fi Deep Space Glassmorphism)
+- **Versión Actual:** `v0.4.0` (Fase SDD: Rediseño Estético Premium y Pulido Visual)
+- **Estado exacto:** Sesión 17 completada con éxito. Sistema 100% operativo y probado:
+  1. **Portada / Landing (Paso 1):** Icono de visor dermatológico `[ . o . ]`, tipografía Playfair Display "OLIVIA", frase inspiracional con resalte en color púrpura ("piel"), esfera celestial 3D iridiscente con animación fluida de flotación (`celestialFloat`), doble anillo orbital Saturno 3D neón, estrellas centelleantes y plataforma elíptica luminosa en el suelo.
+  2. **Botón de Inicio:** Píldora translúcida con borde neón púrpura (`Presiona la esfera para comenzar tu conversación con Olivia`) y chevron interactivo `>`, que activa el cambio fluido a la vista de chat.
+  3. **Footer Portada:** Divisor simétrico con corazón `── ♡ ──` y descargo médico-legal integrado.
+  4. **Chat Header (Paso 2):** Avatar con mini orbe celestial iridiscente, título "OLIVIA AI", subtítulo uppercase espaciado "TU ASISTENTE DERMATOLÓGICA", píldora de estado `🟢 En línea` y botón accesible `← Inicio`.
+  5. **Tarjeta de Bienvenida Glassmorphism:** Tarjeta con fondo frosted glass oscuro, resplandor neón periférico, marca de agua con cruz médica translúcida, badge tecnológico superior con esquinas de cámara y anillo orbital diagonal, saludo de la Dra. Olivia, y 3 píldoras de guía informativas (no interactivas, ya que las acciones residen en el botón `+`). La tarjeta de bienvenida se oculta automáticamente tan pronto como el usuario envía su primer mensaje o fotografía para dejar espacio a la conversación.
+  6. **Barra de Entrada Flotante (Estilo Imagen 3):** Píldora inferior flotante con bordes redondeados y glow violeta, botón circular `+` en el extremo izquierdo con menú popover flotante (Cámara en vivo y Subir imagen), cápsula interior para el campo de texto ("Escribe tu consulta médica...") y botón circular morado de envío con icono de avión de papel `✈`.
+  7. **Suite de Pruebas:** 27/27 tests pasando (100% verde sin ninguna regresión funcional ni clínica).
+  8. **Servidor activo:** Uvicorn en ejecución con recarga automática en `http://127.0.0.1:8000/`.
+- **Próximo paso:** Pruebas visuales finales por parte de la usuaria en su navegador y preparación de la memoria/documentación del TFG.

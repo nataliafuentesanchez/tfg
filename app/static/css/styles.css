@@ -50,6 +50,36 @@ html, body {
   justify-content: center;
   position: relative;
   background: radial-gradient(circle at 50% 20%, #151c33 0%, #080b13 100%);
+  overflow: hidden;
+}
+
+/* ==========================================
+   FONDOS DE AURORA AMBIENTAL CÓSMICA
+   ========================================== */
+.aurora-ambient {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  transition: opacity 0.5s ease;
+}
+
+.aurora-top-left {
+  top: -120px;
+  left: -120px;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.45) 0%, rgba(59, 130, 246, 0.25) 45%, transparent 70%);
+}
+
+.aurora-bottom-right {
+  bottom: -140px;
+  right: -140px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(236, 72, 153, 0.2) 50%, transparent 75%);
 }
 
 /* ==========================================
@@ -65,6 +95,7 @@ html, body {
   opacity: 0;
   transform: translateY(12px) scale(0.98);
   transition: opacity 0.35s ease, transform 0.35s ease;
+  z-index: 1;
 }
 
 .step-container.active {
@@ -74,7 +105,7 @@ html, body {
 }
 
 /* ==========================================
-   PASO 1: LANDING CON ESFERA INTERACTIVA
+   PASO 1: LANDING CON ESFERA INTERACTIVA (IMAGEN 1)
    ========================================== */
 .step-landing {
   align-items: center;
@@ -85,151 +116,332 @@ html, body {
 .landing-card {
   width: 100%;
   height: 100%;
-  background: var(--bg-card-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  background: rgba(8, 12, 28, 0.65);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 48px 32px 32px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(16px);
+  padding: 36px 28px 24px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px);
   position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Badge Icon Superior */
+.brand-badge-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.bracket-camera-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.6));
 }
 
 .brand-title {
   font-family: 'Playfair Display', serif;
-  font-size: 2.8rem;
-  letter-spacing: 0.15em;
+  font-size: 3rem;
+  letter-spacing: 0.28em;
   font-weight: 500;
   color: #ffffff;
-  margin-top: 8px;
+  margin-top: 4px;
+  text-indent: 0.28em;
+  text-shadow: 0 2px 14px rgba(255, 255, 255, 0.2);
 }
 
 .brand-tagline {
   font-size: 1.05rem;
-  color: var(--text-muted);
-  margin-top: -12px;
+  color: #cbd5e1;
+  margin-top: -6px;
   font-weight: 400;
+  letter-spacing: 0.02em;
 }
 
-/* Esfera Visual Viva (Multi-gradiente animado) */
-.orb-wrapper {
+.highlight-purple {
+  color: #c084fc;
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
+}
+
+/* Esfera Celestial 3D Flotante con Anillos e Iluminación de Suelo */
+.celestial-system-container {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: 320px;
+  height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  margin: 20px 0;
-  border-radius: 50%;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin: 12px 0;
+  perspective: 900px;
+  user-select: none;
 }
 
-.orb-wrapper:hover {
-  transform: scale(1.05);
-}
-
-.orb-glow {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.35) 0%, rgba(6, 182, 212, 0.45) 45%, rgba(139, 92, 246, 0.2) 70%, transparent 80%);
-  filter: blur(28px);
-  animation: orbPulse 4s ease-in-out infinite alternate;
-}
-
-.orb-core {
+.celestial-orb-3d-wrap {
   position: relative;
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  overflow: hidden;
-  box-shadow: 
-    inset -10px -10px 40px rgba(0, 0, 0, 0.6),
-    inset 10px 10px 30px rgba(255, 255, 255, 0.4),
-    0 0 40px rgba(6, 182, 212, 0.4);
-  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #38bdf8 30%, #ec4899 65%, #6366f1 90%);
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: celestialFloat 6s ease-in-out infinite alternate;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.orb-swirl {
+.celestial-system-container:hover .celestial-orb-3d-wrap {
+  transform: scale(1.06) translateY(-4px);
+}
+
+@keyframes celestialFloat {
+  0% {
+    transform: translateY(10px) rotateZ(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotateZ(1deg);
+  }
+  100% {
+    transform: translateY(10px) rotateZ(-1deg);
+  }
+}
+
+/* Cuerpo de la Esfera Cristalina Iridiscente */
+.celestial-sphere-body {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 25%, #ffffff 0%, #fbcfe8 18%, #c084fc 45%, #60a5fa 75%, #3b82f6 95%);
+  box-shadow: 
+    inset -14px -14px 35px rgba(26, 16, 60, 0.75),
+    inset 12px 12px 30px rgba(255, 255, 255, 0.85),
+    0 0 45px rgba(192, 132, 252, 0.65),
+    0 0 80px rgba(96, 165, 250, 0.45);
+  overflow: hidden;
+  z-index: 2;
+  transition: box-shadow 0.3s ease;
+}
+
+.sphere-specular-highlight {
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  border-radius: 40%;
-  opacity: 0.75;
+  top: 10%;
+  left: 20%;
+  width: 55px;
+  height: 35px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 60%, transparent 100%);
+  transform: rotate(-25deg);
+  filter: blur(1.5px);
+}
+
+.sphere-glow-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 75% 80%, rgba(56, 189, 248, 0.8) 0%, transparent 60%);
   mix-blend-mode: screen;
 }
 
-.swirl-1 {
-  background: conic-gradient(from 0deg, #06b6d4, #ec4899, #8b5cf6, #3b82f6, #06b6d4);
-  animation: spinSlow 12s linear infinite;
+.sphere-ambient-shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 120deg, transparent 0%, rgba(244, 114, 182, 0.5) 25%, transparent 50%, rgba(56, 189, 248, 0.5) 75%, transparent 100%);
+  mix-blend-mode: color-dodge;
+  animation: celestialShimmer 10s linear infinite;
 }
 
-.swirl-2 {
-  background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(236, 72, 153, 0.6) 40%, transparent 70%);
-  animation: spinReverse 9s linear infinite;
-}
-
-.swirl-3 {
-  background: conic-gradient(from 180deg, transparent, rgba(6, 182, 212, 0.9), transparent, rgba(236, 72, 153, 0.8));
-  animation: spinSlow 7s ease-in-out infinite alternate;
-}
-
-@keyframes spinSlow {
+@keyframes celestialShimmer {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-@keyframes spinReverse {
-  0% { transform: rotate(360deg) scale(0.95); }
-  100% { transform: rotate(0deg) scale(1.05); }
+/* Anillos Saturno 3D Neón */
+.celestial-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
 }
 
-@keyframes orbPulse {
-  0% { transform: scale(0.92); opacity: 0.7; }
-  100% { transform: scale(1.12); opacity: 1; }
+.ring-primary {
+  width: 270px;
+  height: 90px;
+  border: 2px solid rgba(224, 231, 255, 0.9);
+  box-shadow: 
+    0 0 16px rgba(192, 132, 252, 0.9),
+    0 0 30px rgba(147, 197, 253, 0.7),
+    inset 0 0 12px rgba(192, 132, 252, 0.8);
+  transform: rotateX(74deg) rotateY(-18deg) rotateZ(-12deg);
+  z-index: 3;
 }
 
-/* Botón Iniciar Diálogo */
+.ring-secondary {
+  width: 295px;
+  height: 100px;
+  border: 1.5px solid rgba(168, 85, 247, 0.55);
+  box-shadow: 0 0 20px rgba(147, 197, 253, 0.45);
+  transform: rotateX(74deg) rotateY(-18deg) rotateZ(-12deg) scale(1.08);
+  z-index: 1;
+  opacity: 0.75;
+}
+
+/* Partículas / Estrellas Centelleantes */
+.sparkle-particle {
+  position: absolute;
+  color: #ffffff;
+  pointer-events: none;
+  font-size: 13px;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.9), 0 0 16px rgba(255, 255, 255, 0.8);
+  animation: sparkleTwinkle 3s ease-in-out infinite alternate;
+}
+
+.sparkle-1 { top: 12%; left: 16%; animation-delay: 0s; font-size: 15px; color: #fbcfe8; }
+.sparkle-2 { top: 16%; right: 18%; animation-delay: 1.2s; font-size: 14px; color: #e0e7ff; }
+.sparkle-3 { bottom: 26%; left: 12%; animation-delay: 0.6s; font-size: 11px; color: #c084fc; }
+.sparkle-4 { bottom: 32%; right: 15%; animation-delay: 1.8s; font-size: 14px; color: #93c5fd; }
+.sparkle-5 { top: 46%; left: 8%; animation-delay: 2.2s; font-size: 10px; color: #ffffff; }
+
+@keyframes sparkleTwinkle {
+  0% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.4; transform: scale(0.9); }
+}
+
+/* Plataforma de Luz Elíptica en el Suelo */
+.ground-light-platform {
+  position: absolute;
+  bottom: 8px;
+  width: 240px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ground-ring-outer {
+  position: absolute;
+  width: 190px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(139, 92, 246, 0.7);
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.6), inset 0 0 15px rgba(56, 189, 248, 0.4);
+}
+
+.ground-ring-inner {
+  position: absolute;
+  width: 140px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(56, 189, 248, 0.85);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.7);
+}
+
+.ground-beam-glow {
+  position: absolute;
+  width: 160px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.45) 0%, rgba(56, 189, 248, 0.25) 50%, transparent 80%);
+  filter: blur(8px);
+}
+
+/* Botón Píldora Inicio (Imagen 1) */
 .start-pill-btn {
   width: 100%;
-  max-width: 440px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(139, 92, 246, 0.4);
-  color: #e2e8f0;
-  padding: 18px 24px;
-  border-radius: var(--radius-md);
-  font-size: 0.95rem;
+  max-width: 490px;
+  background: rgba(22, 27, 56, 0.6);
+  border: 1.5px solid rgba(147, 112, 219, 0.75);
+  color: #f1f5f9;
+  padding: 16px 24px;
+  border-radius: 40px;
+  font-size: 0.94rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  text-align: center;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  backdrop-filter: blur(12px);
+  user-select: none;
 }
 
 .start-pill-btn:hover {
-  background: rgba(139, 92, 246, 0.12);
-  border-color: rgba(139, 92, 246, 0.8);
-  box-shadow: 0 0 25px rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(192, 132, 252, 0.95);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.5), inset 0 0 14px rgba(168, 85, 247, 0.2);
   transform: translateY(-2px);
   color: #ffffff;
 }
 
-.legal-footnote {
-  font-size: 0.75rem;
-  color: var(--text-dim);
+.start-pill-btn .pill-text {
+  flex: 1;
   text-align: center;
-  margin-top: 10px;
+  letter-spacing: 0.01em;
+}
+
+.start-pill-btn .pill-chevron {
+  display: flex;
+  align-items: center;
+  color: #c084fc;
+  transition: transform 0.2s ease;
+}
+
+.start-pill-btn:hover .pill-chevron {
+  transform: translateX(4px);
+  color: #ffffff;
+}
+
+/* Footer con Corazón */
+.landing-footer-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.footer-divider-heart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.footer-divider-heart .divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(147, 112, 219, 0.4), transparent);
+}
+
+.footer-divider-heart .heart-symbol {
+  color: #c084fc;
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.legal-footnote {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  text-align: center;
+  letter-spacing: 0.01em;
 }
 
 /* ==========================================
-   PASO 2: CHAT INTERACTIVO
+   PASO 2: CHAT INTERACTIVO (IMAGEN 2)
    ========================================== */
 .step-chat {
   padding: 16px;
@@ -240,42 +452,56 @@ html, body {
 .chat-window {
   width: 100%;
   height: 100%;
-  background: var(--bg-card-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  background: rgba(10, 14, 32, 0.75);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 28px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(20px);
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px);
 }
 
-/* Header */
+/* Header (Imagen 2) */
 .chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 23, 42, 0.6);
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(12, 17, 40, 0.65);
 }
 
 .chat-header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.chat-header-left:hover {
+  opacity: 0.9;
 }
 
 .header-avatar, .msg-avatar {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  background: transparent;
+  border: none;
+}
+
+.mini-celestial-orb {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 25%, #ffffff 0%, #fbcfe8 20%, #c084fc 45%, #60a5fa 75%, #3b82f6 95%);
+  box-shadow: 0 0 15px rgba(192, 132, 252, 0.7), inset 2px 2px 6px rgba(255, 255, 255, 0.8);
+  animation: celestialShimmer 8s linear infinite;
 }
 
 .mini-orb {
@@ -283,14 +509,29 @@ html, body {
   height: 24px;
   border-radius: 50%;
   background: conic-gradient(from 0deg, #06b6d4, #ec4899, #8b5cf6, #06b6d4);
-  animation: spinSlow 6s linear infinite;
+  animation: celestialShimmer 6s linear infinite;
 }
 
-.bot-name {
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #f8fafc;
+.header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bot-name-main {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+}
+
+.bot-name-sub {
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
 }
 
 .chat-header-right {
@@ -302,51 +543,42 @@ html, body {
 .status-pill {
   font-size: 0.82rem;
   color: #34d399;
-  font-weight: 600;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 6px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 5px 12px;
+  border-radius: 20px;
 }
 
 .online-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: #10b981;
   box-shadow: 0 0 8px #10b981;
 }
 
-.new-chat-btn {
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.5);
-  color: #c084fc;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.new-chat-btn:hover {
-  background: rgba(139, 92, 246, 0.3);
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
-}
-
 .back-home-btn {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  padding: 4px 10px;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 20px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   transition: all 0.2s ease;
 }
 
 .back-home-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(192, 132, 252, 0.6);
   color: #ffffff;
 }
 
@@ -396,13 +628,154 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.guide-options-list {
-  list-style: none;
-  margin-top: 10px;
+/* ==========================================
+   GLASSMORPHISM WELCOME CARD (IMAGEN 2)
+   ========================================== */
+.welcome-card-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 10px;
+}
+
+.welcome-glass-card {
+  position: relative;
+  width: 100%;
+  background: rgba(12, 18, 44, 0.75);
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  border-radius: 26px;
+  padding: 28px 24px 22px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(139, 92, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+}
+
+.card-cross-watermark {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.welcome-card-header {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.welcome-tech-badge {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: rgba(18, 25, 60, 0.8);
+  border: 1.5px solid rgba(139, 92, 246, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.35);
+}
+
+.badge-ring-orbit {
+  position: absolute;
+  width: 82px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(192, 132, 252, 0.6);
+  transform: rotate(-35deg);
+  pointer-events: none;
+}
+
+.badge-camera-svg {
+  width: 44px;
+  height: 44px;
+  z-index: 1;
+}
+
+.welcome-header-text {
+  flex: 1;
+}
+
+.welcome-card-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.purple-sparkle {
+  color: #c084fc;
+  font-size: 1.25rem;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.8);
+}
+
+.welcome-card-desc {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.dr-olivia-highlight {
+  color: #c084fc;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+}
+
+.welcome-card-subdesc {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+/* Opciones guía de bienvenida apiladas */
+.welcome-guide-options {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  color: #cbd5e1;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.guide-action-pill {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  background: rgba(18, 25, 58, 0.55);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 20px;
+  user-select: none;
+  cursor: default;
+}
+
+.pill-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.22);
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+.guide-text {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.badge-highlight-camera, .badge-highlight-upload {
+  color: #c084fc;
+  font-weight: 600;
 }
 
 .user-bubble {
@@ -692,54 +1065,208 @@ html, body {
   color: #94a3b8;
 }
 
-/* Footer / Action Bar */
-.chat-footer-bar {
-  padding: 14px 20px;
-  background: rgba(15, 23, 42, 0.8);
-  border-top: 1px solid var(--border-subtle);
+/* ==========================================
+   FLOATING BOTTOM INPUT BAR (IMAGEN 3 CON BOTÓN +)
+   ========================================== */
+.chat-floating-bar-wrapper {
+  position: relative;
+  padding: 12px 20px 20px;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+}
+
+/* Menú Popover de Acciones (+) */
+.attach-popover-menu {
+  position: absolute;
+  bottom: 74px;
+  left: 20px;
+  background: rgba(13, 17, 44, 0.94);
+  backdrop-filter: blur(24px);
+  border: 1.5px solid rgba(147, 112, 219, 0.65);
+  border-radius: 20px;
+  padding: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(139, 92, 246, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 50;
+  min-width: 230px;
+  animation: popoverSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popoverSlideUp {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.popover-action-item {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.input-container-fake {
-  flex: 1;
-}
-
-.chat-input-field {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
   width: 100%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 12px 16px;
-  color: var(--text-main);
-  font-size: 0.9rem;
-  outline: none;
 }
 
-.chat-input-field:focus {
-  border-color: rgba(139, 92, 246, 0.6);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+.popover-action-item:hover {
+  background: rgba(139, 92, 246, 0.22);
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.2);
+  transform: translateX(4px);
 }
 
-.btn-send {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
-  padding: 11px 14px;
-  border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
-}
-
-.btn-send:hover {
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.55);
-  transform: translateY(-1px);
-}
-
-.footer-action-buttons {
+.popover-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-camera {
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  color: #c084fc;
+}
+
+.icon-upload {
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+.popover-text-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popover-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.popover-subtitle {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+/* Barra flotante estilo imagen 3 */
+.chat-input-floating-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(13, 17, 40, 0.88);
+  border: 1.5px solid rgba(147, 112, 219, 0.65);
+  border-radius: 40px;
+  padding: 6px 8px 6px 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+/* Botón '+' circular estilo imagen 3 */
+.attach-plus-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.attach-plus-btn:hover {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(192, 132, 252, 0.6);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.attach-plus-btn.active {
+  background: rgba(139, 92, 246, 0.4);
+  border-color: rgba(192, 132, 252, 0.8);
+  color: #ffffff;
+  transform: rotate(45deg);
+}
+
+.chat-input-form-inner {
+  flex: 1;
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
+/* Cápsula interior para el input */
+.chat-input-pill-inner {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 30px;
+  padding: 2px 16px;
+  display: flex;
+  align-items: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-input-pill-inner:focus-within {
+  border-color: rgba(192, 132, 252, 0.7);
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.25);
+}
+
+.chat-text-input-field {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 0.94rem;
+  font-family: inherit;
+  padding: 10px 0;
+}
+
+.chat-text-input-field::placeholder {
+  color: #94a3b8;
+  font-size: 0.92rem;
+}
+
+/* Botón de envío circular morado con resplandor estilo imagen 3 */
+.send-round-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(192, 132, 252, 0.95) 0%, rgba(139, 92, 246, 0.95) 60%, rgba(99, 102, 241, 1) 100%);
+  border: none;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.send-round-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 26px rgba(192, 132, 252, 0.85);
+}
+
+/* Compatibilidad con botones genéricos en modales/drawer */
 .action-btn {
   display: flex;
   align-items: center;

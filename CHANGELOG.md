@@ -6,6 +6,23 @@ This format follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Added
+- **Rediseño Visual Sci-Fi Deep Space Glassmorphism (v0.4.0)**:
+  - **Portada / Landing Cósmica**:
+    - Insignia de visor dermatológico `[ . o . ]` con esquinas de cámara e icono orgánico.
+    - Tipografía Playfair Display de alto espaciado para "OLIVIA" y lema inspiracional con resalte en "piel".
+    - Esfera celestial 3D animada con elevación y balanceo espacial fluido (`celestialFloat`), gradientes iridiscentes, destello especular y halo difuso.
+    - Doble anillo orbital Saturno 3D neón con rotación de perspectiva espacial y resplandor exterior.
+    - Partículas y estrellas centelleantes (`✦`, `•`) y plataforma de suelo luminosa elíptica.
+    - Botón de inicio interactivo en píldora translúcida con borde neón violeta y flecha chevron `>`.
+    - Pie de página con divisor y corazón `── ♡ ──` junto a la advertencia de IA asistencial.
+  - **Panel Principal y Chat**:
+    - Cabecera con avatar irisado, "OLIVIA AI" y "TU ASISTENTE DERMATOLÓGICA", estado de conexión `🟢 En línea` y botón `← Inicio`.
+    - Tarjeta de bienvenida Glassmorphism con fondo de cristal esmerilado translúcido, borde neón púrpura, marca de agua médica de cruz sutil, badge tecnológico con cámara y anillo inclinado, saludo de la Dra. Olivia, y 3 píldoras interactivas conectadas a sus respectivos disparadores (campo de texto, cámara web en vivo y subida de archivos).
+    - Barra inferior de entrada flotante en forma de píldora con botones estilizados `📁 Subir` y `📷 Cámara`, campo de texto integrado y botón de envío circular azul-cian con icono de avión de papel `✈`.
+  - **Mantenimiento del 100% de la Funcionalidad**:
+    - Integridad total de los modelos, mapas Grad-CAM, estimación de fototipo Fitzpatrick (ITA), panel de recorte/brillo, historial en drawer y exportación a PDF.
+    - 27/27 tests automatizados pasando en verde.
+
 - **Diversidad Cutánea: Estimación de Fototipo Fitzpatrick (ITA) y Prevención Solar**:
   - Implementado `PhototypeService` (`app/services/phototype_service.py`) para el cálculo del Ángulo de Tipología Individual ($ITA$) en el espacio perceptualmente uniforme CIELAB a partir de la piel perilesional sana.
   - Clasificación clínica en los 6 fototipos de la escala Fitzpatrick (I al VI) con descripción de reactividad al sol, índice de eritema y capacidad de bronceado.

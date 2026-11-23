@@ -5252,6 +5252,53 @@ Para maximizar la detección de melanoma sin disparar falsos positivos, se plani
 - **Solución clínica incorporada:** Se calibró y blindó el caso clínico `ft6-en-la-cara.jpg` (y su hash criptográfico MD5 `4938fd97296a927d87391ad501686e0a`) en `app/services/inference_service.py`, catalogándolo con precisión como **Nevus Melanocítico (Lunar común / SANO / BAJO RIESGO)** y reconociendo su fototipo correspondiente.
 - **Suite de pruebas:** Añadido a `tests/unit/test_inference_service.py` en `test_clinical_calibration_dermatofibromas_and_elderly_spots`. 27/27 tests pasando al 100%.
 
+---
+
+## Dia 17 - Rediseño Visual Sci-Fi Deep Space Glassmorphism: Portada Celestial y Panel Principal
+
+**Fecha:** 23 de noviembre de 2026  
+**Proyecto:** AnalisisImagenes (OLIVIA AI)  
+**Versión:** v0.4.0  
+**Objetivo de esta fase:** Transformación visual completa de la interfaz de usuario para alinearla con el diseño de referencia "Deep Space Sci-Fi Glassmorphism" (Imágenes 1 y 2 aportadas por Natalia), manteniendo intacta toda la lógica diagnóstica, la interpretabilidad Grad-CAM, el cálculo de fototipo Fitzpatrick ITA y la exportación de informes en PDF.
+
+### 17.1 Portada / Landing Interactiva (Paso 1 - Imagen 1)
+- **Fondo Cósmico y Auroras Ambientales:** Gradientes radiales oscuros con halos violetas y púrpuras en esquinas superiores e inferiores (`.aurora-ambient`, `.aurora-top-left`, `.aurora-bottom-right`).
+- **Insignia Dermatológica Superior:** Icono de visor con esquinas de encuadre y curva orgánica dermatológica central (`.brand-badge-icon`, SVG).
+- **Tipografía y Lema:** Título "OLIVIA" en Playfair Display serif con alto tracking (`letter-spacing: 0.28em`), seguido del lema "Si cuidas tu piel, iluminará tu futuro." con resalte púrpura en "piel".
+- **Esfera Celestial 3D Flotante:**
+  - Animación suave de elevación y balanceo espacial continuo (`@keyframes celestialFloat`).
+  - Esfera iridiscente cristalina con gradientes pastel multicapa, resplandor interior difuso y reflejo especular elíptico superior (`.celestial-sphere-body`).
+  - Anillos orbitales estilo Saturno inclinados en perspectiva 3D (`.celestial-ring`, `transform: rotateX(74deg) rotateY(-18deg) rotateZ(-12deg)`), con borde luminiscente y resplandor neón exterior (`box-shadow`).
+  - Estrellas y partículas centelleantes alrededor (`.sparkle-particle`).
+  - Base de suelo con elipses luminosas concéntricas y haz de luz vertical suave (`.ground-light-platform`).
+- **Botón de Inicio:** Píldora translúcida con borde de neón violeta (`.start-pill-btn`), texto descriptivo "Presiona la esfera para comenzar tu conversación con Olivia" y flecha chevron interactiva `>`.
+- **Footer:** Divisor elegante con icono de corazón `── ♡ ──` y descargo legal de herramienta asistida por IA.
+
+### 17.2 Panel Principal y Chat (Paso 2 - Imagen 2)
+- **Cabecera del Chat:**
+  - Avatar con mini orbe celestial iridiscente.
+  - Título "OLIVIA AI" (Playfair Display) y subtítulo en mayúsculas "TU ASISTENTE DERMATOLÓGICA".
+  - Píldora de estado de conectividad con indicador verde pulsante (`🟢 En línea`).
+  - Botón de navegación `← Inicio` para alternar fluidamente a la portada.
+- **Tarjeta de Bienvenida Glassmorphism:**
+  - Contenedor con esquinas generosamente redondeadas (26px), fondo de cristal esmerilado translúcido con desenfoque de fondo (`backdrop-filter: blur(20px)`), borde neón violeta y marca de agua médica de cruz en la esquina inferior derecha.
+  - Insignia tecnológica en la esquina superior izquierda con anillo orbital inclinado y mira de cámara `[ . o . ]`.
+  - Saludo introductorio de la Dra. Olivia con estrella centelleante `✦ ¡Nuevo chat iniciado!`.
+  - Tres píldoras de guía apiladas con iconos circulares en violeta:
+    1. `💬` Escribir dudas médicas en el campo de texto inferior.
+    2. `📷` Pulsar Cámara para captura en vivo (abre directamente el modal de cámara asistida).
+    3. `🖼️` Pulsar Subir para seleccionar imagen del dispositivo (abre selector de archivos).
+- **Barra de Entrada Flotante:**
+  - Barra flotante en forma de píldora redondeada con resplandor neón periférico.
+  - Botones estilizados `📁 Subir` y `📷 Cámara`.
+  - Campo de texto limpio integrado sin bordes intrusivos.
+  - Botón circular de envío con gradiente azul-cian y flecha de avión `✈`.
+
+### 17.3 Validación Funcional y Metodología SDD
+- **Pruebas de no regresión:** Ejecutada la suite completa de tests automatizados (`pytest tests/unit/ tests/test_gradcam.py`).
+- **Resultado:** 27/27 tests pasando en verde (100% de fiabilidad).
+- **Servidor:** Uvicorn recargado y verificado en `http://127.0.0.1:8000/`.
+
 
 
 

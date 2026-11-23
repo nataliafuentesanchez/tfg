@@ -28,32 +28,87 @@ def index() -> str:
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/static/css/styles.css?v=3.5" />
+    <link rel="stylesheet" href="/static/css/styles.css?v=4.2" />
   </head>
   <body>
     <div class="app-viewport">
       
+      <!-- Fondos de Aurora Ambiental Cósmica -->
+      <div class="aurora-ambient aurora-top-left" aria-hidden="true"></div>
+      <div class="aurora-ambient aurora-bottom-right" aria-hidden="true"></div>
+      
       <!-- ================= PASO 1: LANDING CON ESFERA ================= -->
       <section class="step-container step-landing active" id="step1Landing">
         <div class="landing-card">
-          <h1 class="brand-title">OLIVIA</h1>
-          <p class="brand-tagline">Si cuidas tu piel, iluminará tu futuro.</p>
+          
+          <!-- Badge Icon Superior: Cámara / Dermatoscopio -->
+          <div class="brand-badge-icon" aria-hidden="true">
+            <svg class="bracket-camera-svg" viewBox="0 0 64 64" fill="none">
+              <!-- Cuatro esquinas de encuadre -->
+              <path d="M16 26V18C16 16.8954 16.8954 16 18 16H26" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M48 26V18C48 16.8954 47.1046 16 46 16H38" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M16 38V46C16 47.1046 16.8954 48 18 48H26" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M48 38V46C48 47.1046 47.1046 48 46 48H38" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round"/>
+              <!-- Curva orgánica dermatológica con núcleo -->
+              <path d="M22 34C24 28 28 27 32 31C36 35 40 33 42 29" stroke="#e0e7ff" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="34" cy="38" r="3.5" fill="#c084fc" />
+            </svg>
+          </div>
 
-          <div class="orb-wrapper" id="sphereTrigger" title="Pulsa para comenzar la conversación">
-            <div class="orb-glow"></div>
-            <div class="orb-core">
-              <div class="orb-swirl swirl-1"></div>
-              <div class="orb-swirl swirl-2"></div>
-              <div class="orb-swirl swirl-3"></div>
+          <h1 class="brand-title">OLIVIA</h1>
+          <p class="brand-tagline">Si cuidas tu <span class="highlight-purple">piel</span>, iluminará tu futuro.</p>
+
+          <!-- Esfera Celestial 3D Flotante con Anillos e Iluminación de Suelo -->
+          <div class="celestial-system-container" id="sphereTrigger" title="Pulsa para comenzar la conversación">
+            <!-- Partículas / Estrellas brillantes flotantes -->
+            <div class="sparkle-particle sparkle-1">✦</div>
+            <div class="sparkle-particle sparkle-2">✦</div>
+            <div class="sparkle-particle sparkle-3">•</div>
+            <div class="sparkle-particle sparkle-4">✦</div>
+            <div class="sparkle-particle sparkle-5">•</div>
+
+            <!-- Sistema de Esfera + Anillos 3D -->
+            <div class="celestial-orb-3d-wrap">
+              <!-- Anillo trasero / secundario -->
+              <div class="celestial-ring ring-secondary"></div>
+              
+              <!-- Esfera cristalina iridiscente -->
+              <div class="celestial-sphere-body">
+                <div class="sphere-glow-inner"></div>
+                <div class="sphere-specular-highlight"></div>
+                <div class="sphere-ambient-shimmer"></div>
+              </div>
+
+              <!-- Anillo frontal / primario -->
+              <div class="celestial-ring ring-primary"></div>
+            </div>
+
+            <!-- Plataforma de Luz Elíptica en el Suelo -->
+            <div class="ground-light-platform">
+              <div class="ground-ring ground-ring-outer"></div>
+              <div class="ground-ring ground-ring-inner"></div>
+              <div class="ground-beam-glow"></div>
             </div>
           </div>
 
+          <!-- Botón Píldora Inicio -->
           <button class="start-pill-btn" id="startConversationBtn" type="button">
-            <span>Presiona la esfera para comenzar tu conversación con Olivia</span>
+            <span class="pill-text">Presiona la esfera para comenzar tu conversación con Olivia</span>
+            <span class="pill-chevron" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </span>
           </button>
 
-          <div class="legal-footnote">
-            Herramienta de cribado asistida por IA · No sustituye la valoración médica
+          <!-- Footer con corazón y aviso legal -->
+          <div class="landing-footer-container">
+            <div class="footer-divider-heart">
+              <span class="divider-line"></span>
+              <span class="heart-symbol">♡</span>
+              <span class="divider-line"></span>
+            </div>
+            <div class="legal-footnote">
+              Herramienta de cribado asistida por IA · No sustituye la valoración médica
+            </div>
           </div>
         </div>
       </section>
@@ -66,15 +121,19 @@ def index() -> str:
           <header class="chat-header">
             <div class="chat-header-left" id="openHistoryDrawerBtn" title="Ver historial de conversaciones">
               <div class="header-avatar">
-                <div class="mini-orb"></div>
+                <div class="mini-celestial-orb"></div>
               </div>
               <div class="header-meta">
-                <span class="bot-name">OLIVIA AI</span>
+                <span class="bot-name-main">OLIVIA AI</span>
+                <span class="bot-name-sub">TU ASISTENTE DERMATOLÓGICA</span>
               </div>
             </div>
             <div class="chat-header-right">
               <span class="status-pill"><span class="online-dot"></span> En línea</span>
-              <button class="back-home-btn" id="backToLandingBtn" title="Volver al inicio">⟵ Inicio</button>
+              <button class="back-home-btn" id="backToLandingBtn" title="Volver al inicio">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Inicio
+              </button>
             </div>
           </header>
 
@@ -86,7 +145,7 @@ def index() -> str:
 
             <!-- Loader animado mientras analiza -->
             <div class="chat-msg-row bot-row" id="typingLoader" style="display: none;">
-              <div class="msg-avatar"><div class="mini-orb"></div></div>
+              <div class="msg-avatar"><div class="mini-celestial-orb"></div></div>
               <div class="msg-bubble loading-bubble">
                 <div class="typing-dots">
                   <span></span>
@@ -99,30 +158,58 @@ def index() -> str:
 
           </div>
 
-          <!-- Chat Input Bar -->
-          <footer class="chat-input-bar">
-            <div class="input-actions-left">
-              <button class="action-btn btn-upload" id="uploadActionBtn" title="Subir imagen" type="button">
-                <span>📁 Subir</span>
+          <!-- Chat Floating Input Bar (Estilo Imagen 3 con botón +) -->
+          <footer class="chat-floating-bar-wrapper">
+            <!-- Menú desplegable flotante de acciones (+: Cámara y Subir) -->
+            <div class="attach-popover-menu" id="attachPopoverMenu" style="display: none;">
+              <button class="popover-action-item" id="cameraActionBtn" type="button">
+                <div class="popover-icon-wrap icon-camera">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                </div>
+                <div class="popover-text-meta">
+                  <span class="popover-title">Cámara en vivo</span>
+                  <span class="popover-subtitle">Tomar fotografía médica</span>
+                </div>
               </button>
-              <button class="action-btn btn-camera" id="cameraActionBtn" title="Usar Cámara" type="button">
-                <span>📷 Cámara</span>
+              <button class="popover-action-item" id="uploadActionBtn" type="button">
+                <div class="popover-icon-wrap icon-upload">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </div>
+                <div class="popover-text-meta">
+                  <span class="popover-title">Subir imagen</span>
+                  <span class="popover-subtitle">Seleccionar de tu dispositivo</span>
+                </div>
               </button>
-              <input type="file" id="fileInputHidden" accept="image/*" style="display: none;" />
             </div>
 
-            <form class="chat-input-form" id="chatForm">
-              <input 
-                type="text" 
-                id="chatTextInput" 
-                class="chat-text-input" 
-                placeholder="Escribe tu consulta médica o habla con Olivia..." 
-                autocomplete="off" 
-              />
-              <button class="send-btn" id="sendTextMsgBtn" type="submit" title="Enviar mensaje">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            <div class="chat-input-floating-bar">
+              <!-- Botón circular '+' -->
+              <button class="attach-plus-btn" id="attachPlusBtn" type="button" title="Adjuntar foto o usar cámara" aria-label="Abrir opciones de imagen">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
               </button>
-            </form>
+              <input type="file" id="fileInputHidden" accept="image/*" style="display: none;" />
+
+              <form class="chat-input-form-inner" id="chatForm">
+                <div class="chat-input-pill-inner">
+                  <input 
+                    type="text" 
+                    id="chatTextInput" 
+                    class="chat-text-input-field" 
+                    placeholder="Escribe tu consulta médica..." 
+                    autocomplete="off" 
+                  />
+                </div>
+                <button class="send-round-btn" id="sendTextMsgBtn" type="submit" title="Enviar mensaje">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </form>
+            </div>
           </footer>
 
         </div>
@@ -261,14 +348,20 @@ def index() -> str:
           <button class="action-btn btn-home-drawer" id="drawerHomeBtn" type="button">⟵ Inicio</button>
         </div>
 
-        <div class="drawer-section-label">📋 SESIONES ANTERIORES:</div>
+        <div class="drawer-section-header-row">
+          <div class="drawer-section-label">📋 SESIONES ANTERIORES:</div>
+          <button class="btn-clear-all-drawer" id="clearAllDrawerBtn" type="button" title="Borrar todo el historial">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Vaciar
+          </button>
+        </div>
         <div class="drawer-history-list" id="drawerHistoryList">
           <!-- Sesiones de chat cargadas dinámicamente -->
         </div>
       </div>
     </div>
 
-    <script src="/static/js/app.js?v=3.5"></script>
+    <script src="/static/js/app.js?v=4.2"></script>
   </body>
 </html>
 """
